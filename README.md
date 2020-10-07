@@ -7,7 +7,7 @@ Unconstrained lattice antibody-antigen bindings generator
 - takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
 - generates features of antibody-antigen bindings directly usable for Machine Learning
 
-The database generated with Absolut! is available at [philippe-robert.com/Absolut/Database/](philippe-robert.com/Absolut/Database/).
+The database generated with Absolut! is available at [philippe-robert.com/Absolut/Database/](http://www.philippe-robert.com/Absolut/Database/).
 
 ## Installation
 
