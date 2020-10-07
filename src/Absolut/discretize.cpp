@@ -712,11 +712,11 @@ void testInOutLatticePDB(){
     // test 2:
     // read a PDB from latfit, then read the same PDB but with another chain, include it in visualization
     latFitToLattice a = latFitToLattice();
-    a.parseLatFitPDB("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Delicab-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ_AdiscretizedFuC5.25.pdb");
+    a.parseLatFitPDB("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ_AdiscretizedFuC5.25.pdb");
     a.transform();
     superProtein* P3 = a.asSuperProtein();
 
-    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Delicab-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ.pdb", "LH", "FuC");
+    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ.pdb", "LH", "FuC");
     vector<vector<double> >* transformed = new vector<vector<double> >(pooledPDBtoLattice(positionsAB, a.initXAxis, a.initYAxis, a.listPositions[0]));
 
 

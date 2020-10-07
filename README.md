@@ -43,7 +43,7 @@ make MPIgxx
 
 
 Help for installing these libraries (especially in Windows) is provided in the documentation
-It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NO_QT in common.h
+It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NOQT in common.h
 ```bash
 cd src
 make		#This creates both Absolut and AbsolutNoLib
@@ -82,15 +82,15 @@ An all-in-one example for most tasks is:\
 *plan 3GB of disk space, 2 GB memory and 500MB download*
 ```bash
 #With ./Absolut or ./AbsolutNoLib:
-./Absolut discretize 1CZ8 VW 5.25 FuC
-./Absolut listAntigens
-./Absolut info_fileNames 1FBI_X
+./AbsolutNoLib listAntigens
+./AbsolutNoLib info_fileNames 1FBI_X
 wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
-./Absolut singleBinding 1FBI_X CARAAHKLARIPK
-./Absolut repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3 is a provided example list of CDR3s
-./Absolut getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
+./AbsolutNoLib singleBinding 1FBI_X CARAAHKLARIPK
+./AbsolutNoLib repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3.txt is a provided example list of CDR3s inside src/
+./AbsolutNoLib getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
 
 #Only possible with full ./Absolut
+./Absolut discretize 1CZ8 VW 5.25 FuC
 ./Absolut visualize 1FBI_X 
 ./Absolut visualize 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5
 ./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 

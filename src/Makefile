@@ -18,7 +18,7 @@ CXXFLAGS      = -pipe -Wreorder -std=c++11 -Wno-extra -Wno-old-style-cast -Wno-s
 
 CXXFLAGSMPI   = -pipe -Wreorder -std=c++11 -Wno-extra -Wno-old-style-cast -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-implicit-int-float-conversion -O2 -w -D_REENTRANT -fPIC -DMPICH_IGNORE_CXX_SEEK $(DEFINES_MPI)
 
-INCPATH       = -IDelicab -I. -IYmir -I. -isystem /usr/include/libdrm 
+INCPATH       = -IAbsolute -I. -IYmir -I. -isystem /usr/include/libdrm 
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
 MKDIR         = mkdir -p
@@ -34,8 +34,7 @@ DEL_DIR       = rmdir
 MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
-DISTNAME      = DelicabNoLib1.0.0
-DISTDIR = /home/pprobert/Desktop/TempSpace/testsDelicab/Bindings/.tmp/DelicabNoLib1.0.0
+DISTNAME      = AbsolutNoLib1.0.0
 
 LINK          = g++
 LINKMPICXX    = mpicxx
@@ -65,17 +64,17 @@ SOURCES       = Ymir/compact.cpp \
 		Tools/zaprandom.cpp \
 		Tools/nucleotides.cpp \
 		Tools/distribution.cpp \
-		Delicab/antigenLib.cpp \
-		Delicab/epitope.cpp \
-		Delicab/fileformats.cpp \
-		Delicab/html.cpp \
-		Delicab/importrepertoire.cpp \
-		Delicab/motifFeatures.cpp \
-		Delicab/selfEvo.cpp \
-		Delicab/quality.cpp \
-		Delicab/poolstructs.cpp \
-		Delicab/delimain.cpp \
-		Delicab/topology.cpp
+		Absolut/antigenLib.cpp \
+		Absolut/epitope.cpp \
+		Absolut/fileformats.cpp \
+		Absolut/html.cpp \
+		Absolut/importrepertoire.cpp \
+		Absolut/motifFeatures.cpp \
+		Absolut/selfEvo.cpp \
+		Absolut/quality.cpp \
+		Absolut/poolstructs.cpp \
+		Absolut/delimain.cpp \
+		Absolut/topology.cpp
 OBJECTS       = compact.o \
 		lattice.o \
 		proteins.o \
@@ -99,9 +98,9 @@ OBJECTS       = compact.o \
 		poolstructs.o \
 		delimain.o \
 		topology.o
-DIST          = Delicab/.qmake.stash \
-		Delicab/Ymir/YmirNoGL.pri \
-		Delicab/Delicab/DelicabNoLib.pro Ymir/compact.h \
+DIST          = Absolut/.qmake.stash \
+		Absolut/Ymir/YmirNoGL.pri \
+		Ymir/compact.h \
 		Ymir/lattice.h \
 		Ymir/proteins.h \
 		Ymir/receptorligand.h \
@@ -114,15 +113,15 @@ DIST          = Delicab/.qmake.stash \
 		Tools/zaprandom.h \
 		Tools/nucleotides.h \
 		Tools/distribution.h \
-		Delicab/antigenLib.h \
-		Delicab/epitope.h \
-		Delicab/fileformats.h \
-		Delicab/html.h \
-		Delicab/importrepertoire.h \
-		Delicab/motifFeatures.h \
-		Delicab/selfEvo.h \
-		Delicab/poolstructs.h \
-		Delicab/quality.h Ymir/compact.cpp \
+		Absolut/antigenLib.h \
+		Absolut/epitope.h \
+		Absolut/fileformats.h \
+		Absolut/html.h \
+		Absolut/importrepertoire.h \
+		Absolut/motifFeatures.h \
+		Absolut/selfEvo.h \
+		Absolut/poolstructs.h \
+		Absolut/quality.h Ymir/compact.cpp \
 		Ymir/lattice.cpp \
 		Ymir/proteins.cpp \
 		Ymir/receptorligand.cpp \
@@ -134,16 +133,16 @@ DIST          = Delicab/.qmake.stash \
 		Tools/zaprandom.cpp \
 		Tools/nucleotides.cpp \
 		Tools/distribution.cpp \
-		Delicab/antigenLib.cpp \
-		Delicab/epitope.cpp \
-		Delicab/fileformats.cpp \
-		Delicab/html.cpp \
-		Delicab/importrepertoire.cpp \
-		Delicab/motifFeatures.cpp \
-		Delicab/selfEvo.cpp \
-		Delicab/quality.cpp \
-		Delicab/poolstructs.cpp \
-		Delicab/delimain.cpp
+		Absolut/antigenLib.cpp \
+		Absolut/epitope.cpp \
+		Absolut/fileformats.cpp \
+		Absolut/html.cpp \
+		Absolut/importrepertoire.cpp \
+		Absolut/motifFeatures.cpp \
+		Absolut/selfEvo.cpp \
+		Absolut/quality.cpp \
+		Absolut/poolstructs.cpp \
+		Absolut/delimain.cpp
 QMAKE_TARGET  = AbsolutNoLib
 DESTDIR       = 
 TARGET        = AbsolutNoLib
@@ -155,25 +154,25 @@ TARGETFULL    = Absolut
 first: all
 ####### Build rules
 
-DelicabNoLib:  $(OBJECTS)  
+AbsolutNoLib:  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
-DelicabNoLibMPI:  $(OBJECTS)  
+AbsolutNoLibMPI:  $(OBJECTS)  
 	$(LINK) $(LFLAGS) -o $(TARGET) $(OBJECTS) $(OBJCOMP) $(LIBS)
 
 
-Makefile: Delicab/DelicabNoLib.pro .qmake.stash \
+Makefile: Absolut/AbsolutNoLib.pro .qmake.stash \
 		Ymir/YmirNoGL.pri \
-		Delicab/DelicabNoLib.pro
-	$(QMAKE) -o Makefile Delicab/DelicabNoLib.pro
+		Absolut/AbsolutNoLib.pro
+	$(QMAKE) -o Makefile Absolut/AbsolutNoLib.pro
 Makefile: TARGET = $(TARGETFULL)
 
 	
 .qmake.stash:
 Ymir/YmirNoGL.pri:
-Delicab/DelicabNoLib.pro:
+Absolut/AbsolutNoLib.pro:
 
-all: clean Makefile DelicabNoLib 
+all: clean Makefile AbsolutNoLib 
 
 MPIcxx: clean
 MPIcxx: CC = $(MPICC)
@@ -181,7 +180,7 @@ MPIcxx: CXX = $(MPICXX)
 MPIcxx: LINK = $(LINKMPICXX)
 MPIcxx: CXXFLAGS = $(CXXFLAGSMPI)
 MPIcxx: TARGET = $(TARGETMPI)
-MPIcxx: DelicabNoLibMPI
+MPIcxx: AbsolutNoLibMPI
 
 MPIc++: clean
 MPIc++: CC = $(MPICC)
@@ -189,7 +188,7 @@ MPIc++: CXX = mpic++
 MPIc++: LINK = mpic++
 MPIc++: CXXFLAGS = $(CXXFLAGSMPI)
 MPIc++: TARGET = $(TARGETMPI)
-MPIc++: DelicabNoLibMPI
+MPIc++: AbsolutNoLibMPI
 
 MPIgxx: clean
 MPIgxx: CC = mpigcc
@@ -197,7 +196,7 @@ MPIgxx: CXX = mpigxx
 MPIgxx: LINK = mpigxx
 MPIgxx: CXXFLAGS = $(CXXFLAGSMPI)
 MPIgxx: TARGET = $(TARGETMPI)
-MPIgxx: DelicabNoLibMPI
+MPIgxx: AbsolutNoLibMPI
 
 dist: distdir FORCE
 	(cd `dirname $(DISTDIR)` && $(TAR) $(DISTNAME).tar $(DISTNAME) && $(COMPRESS) $(DISTNAME).tar) && $(MOVE) `dirname $(DISTDIR)`/$(DISTNAME).tar.gz . && $(DEL_FILE) -r $(DISTDIR)
@@ -205,8 +204,8 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents Ymir/compact.h Ymir/lattice.h Ymir/proteins.h Ymir/receptorligand.h Ymir/fastaffinity.h Ymir/plot3d.h Tools/stopwatch.h Tools/md5.h Ymir/ymir.h Ymir/zaptrackball.h Tools/zaprandom.h Tools/nucleotides.h Tools/distribution.h Delicab/antigenLib.h Delicab/epitope.h Delicab/fileformats.h Delicab/html.h Delicab/importrepertoire.h Delicab/motifFeatures.h Delicab/selfEvo.h Delicab/poolstructs.h Delicab/quality.h $(DISTDIR)/
-	$(COPY_FILE) --parents Ymir/compact.cpp Ymir/lattice.cpp Ymir/proteins.cpp Ymir/receptorligand.cpp Ymir/fastaffinity.cpp Ymir/plot3d.cpp Tools/stopwatch.cpp Tools/md5.cpp Ymir/zaptrackball.cpp Tools/zaprandom.cpp Tools/nucleotides.cpp Tools/distribution.cpp Delicab/antigenLib.cpp Delicab/epitope.cpp Delicab/fileformats.cpp Delicab/html.cpp Delicab/importrepertoire.cpp Delicab/motifFeatures.cpp Delicab/selfEvo.cpp Delicab/quality.cpp Delicab/poolstructs.cpp Delicab/delimain.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents Ymir/compact.h Ymir/lattice.h Ymir/proteins.h Ymir/receptorligand.h Ymir/fastaffinity.h Ymir/plot3d.h Tools/stopwatch.h Tools/md5.h Ymir/ymir.h Ymir/zaptrackball.h Tools/zaprandom.h Tools/nucleotides.h Tools/distribution.h Absolut/antigenLib.h Absolut/epitope.h Absolut/fileformats.h Absolut/html.h Absolut/importrepertoire.h Absolut/motifFeatures.h Absolut/selfEvo.h Absolut/poolstructs.h Absolut/quality.h $(DISTDIR)/
+	$(COPY_FILE) --parents Ymir/compact.cpp Ymir/lattice.cpp Ymir/proteins.cpp Ymir/receptorligand.cpp Ymir/fastaffinity.cpp Ymir/plot3d.cpp Tools/stopwatch.cpp Tools/md5.cpp Ymir/zaptrackball.cpp Tools/zaprandom.cpp Tools/nucleotides.cpp Tools/distribution.cpp Absolut/antigenLib.cpp Absolut/epitope.cpp Absolut/fileformats.cpp Absolut/html.cpp Absolut/importrepertoire.cpp Absolut/motifFeatures.cpp Absolut/selfEvo.cpp Absolut/quality.cpp Absolut/poolstructs.cpp Absolut/delimain.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -321,7 +320,7 @@ distribution.o: Tools/distribution.cpp Tools/zaprandom.h \
 		Tools/distribution.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o distribution.o Tools/distribution.cpp
 
-antigenLib.o: Delicab/antigenLib.cpp Delicab/antigenLib.h \
+antigenLib.o: Absolut/antigenLib.cpp Absolut/antigenLib.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -330,27 +329,27 @@ antigenLib.o: Delicab/antigenLib.cpp Delicab/antigenLib.h \
 		Ymir/fastaffinity.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o antigenLib.o Delicab/antigenLib.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o antigenLib.o Absolut/antigenLib.cpp
 
-epitope.o: Delicab/epitope.cpp Delicab/epitope.h \
-		Delicab/fileformats.h \
+epitope.o: Absolut/epitope.cpp Absolut/epitope.h \
+		Absolut/fileformats.h \
 		Ymir/compact.h \
 		Ymir/plot3d.h \
 		Ymir/proteins.h \
 		Ymir/receptorligand.h \
 		Ymir/lattice.h \
-		Delicab/motifFeatures.h \
+		Absolut/motifFeatures.h \
 		Ymir/ymir.h \
 		Ymir/fastaffinity.h \
-		Delicab/importrepertoire.h \
-		Delicab/poolstructs.h \
-		Delicab/antigenLib.h \
+		Absolut/importrepertoire.h \
+		Absolut/poolstructs.h \
+		Absolut/antigenLib.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o epitope.o Delicab/epitope.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o epitope.o Absolut/epitope.cpp
 
-fileformats.o: Delicab/fileformats.cpp Delicab/fileformats.h \
-		Delicab/antigenLib.h \
+fileformats.o: Absolut/fileformats.cpp Absolut/fileformats.h \
+		Absolut/antigenLib.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -359,9 +358,9 @@ fileformats.o: Delicab/fileformats.cpp Delicab/fileformats.h \
 		Ymir/fastaffinity.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o fileformats.o Delicab/fileformats.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o fileformats.o Absolut/fileformats.cpp
 
-html.o: Delicab/html.cpp Delicab/html.h \
+html.o: Absolut/html.cpp Absolut/html.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -369,22 +368,22 @@ html.o: Delicab/html.cpp Delicab/html.h \
 		Ymir/receptorligand.h \
 		Ymir/fastaffinity.h \
 		Tools/md5.h \
-		Delicab/discretize.h \
-		Delicab/motifFeatures.h \
-		Delicab/importrepertoire.h \
-		Delicab/quality.h \
-		Delicab/selfEvo.h \
+		Absolut/discretize.h \
+		Absolut/motifFeatures.h \
+		Absolut/importrepertoire.h \
+		Absolut/quality.h \
+		Absolut/selfEvo.h \
 		Tools/zaprandom.h \
 		Tools/dirent.h \
-		Delicab/antigenLib.h \
+		Absolut/antigenLib.h \
 		Tools/distribution.h \
-		Delicab/poolstructs.h \
-		Delicab/pdb.h \
+		Absolut/poolstructs.h \
+		Absolut/pdb.h \
 		Ymir/plot3d.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o html.o Delicab/html.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o html.o Absolut/html.cpp
 
-importrepertoire.o: Delicab/importrepertoire.cpp Delicab/importrepertoire.h \
-		Delicab/antigenLib.h \
+importrepertoire.o: Absolut/importrepertoire.cpp Absolut/importrepertoire.h \
+		Absolut/antigenLib.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -393,21 +392,21 @@ importrepertoire.o: Delicab/importrepertoire.cpp Delicab/importrepertoire.h \
 		Ymir/fastaffinity.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o importrepertoire.o Delicab/importrepertoire.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o importrepertoire.o Absolut/importrepertoire.cpp
 
-motifFeatures.o: Delicab/motifFeatures.cpp Delicab/motifFeatures.h \
+motifFeatures.o: Absolut/motifFeatures.cpp Absolut/motifFeatures.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
 		Ymir/proteins.h \
 		Ymir/receptorligand.h \
 		Ymir/fastaffinity.h \
-		Delicab/importrepertoire.h \
+		Absolut/importrepertoire.h \
 		Ymir/plot3d.h \
 		Tools/dirent.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o motifFeatures.o Delicab/motifFeatures.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o motifFeatures.o Absolut/motifFeatures.cpp
 
-selfEvo.o: Delicab/selfEvo.cpp Delicab/selfEvo.h \
+selfEvo.o: Absolut/selfEvo.cpp Absolut/selfEvo.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -416,15 +415,15 @@ selfEvo.o: Delicab/selfEvo.cpp Delicab/selfEvo.h \
 		Ymir/fastaffinity.h \
 		Tools/nucleotides.h \
 		Tools/zaprandom.h \
-		Delicab/motifFeatures.h \
-		Delicab/importrepertoire.h \
-		Delicab/antigenLib.h \
+		Absolut/motifFeatures.h \
+		Absolut/importrepertoire.h \
+		Absolut/antigenLib.h \
 		Tools/distribution.h \
 		Ymir/plot3d.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o selfEvo.o Delicab/selfEvo.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o selfEvo.o Absolut/selfEvo.cpp
 
-quality.o: Delicab/quality.cpp Delicab/quality.h \
-		Delicab/antigenLib.h \
+quality.o: Absolut/quality.cpp Absolut/quality.h \
+		Absolut/antigenLib.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -434,42 +433,42 @@ quality.o: Delicab/quality.cpp Delicab/quality.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h \
 		Tools/stopwatch.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o quality.o Delicab/quality.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o quality.o Absolut/quality.cpp
 
-poolstructs.o: Delicab/poolstructs.cpp Delicab/poolstructs.h \
+poolstructs.o: Absolut/poolstructs.cpp Absolut/poolstructs.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
 		Ymir/proteins.h \
 		Ymir/receptorligand.h \
 		Ymir/fastaffinity.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o poolstructs.o Delicab/poolstructs.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o poolstructs.o Absolut/poolstructs.cpp
 
-delimain.o: Delicab/delimain.cpp Ymir/ymir.h \
+delimain.o: Absolut/delimain.cpp Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
 		Ymir/proteins.h \
 		Ymir/receptorligand.h \
 		Ymir/fastaffinity.h \
 		Tools/md5.h \
-		Delicab/motifFeatures.h \
-		Delicab/importrepertoire.h \
-		Delicab/quality.h \
-		Delicab/selfEvo.h \
+		Absolut/motifFeatures.h \
+		Absolut/importrepertoire.h \
+		Absolut/quality.h \
+		Absolut/selfEvo.h \
 		Tools/zaprandom.h \
 		Tools/dirent.h \
-		Delicab/antigenLib.h \
+		Absolut/antigenLib.h \
 		Tools/distribution.h \
-		Delicab/poolstructs.h \
-		Delicab/epitope.h \
-		Delicab/fileformats.h \
-		Delicab/html.h \
-		Delicab/discretize.h \
-		Delicab/pdb.h \
+		Absolut/poolstructs.h \
+		Absolut/epitope.h \
+		Absolut/fileformats.h \
+		Absolut/html.h \
+		Absolut/discretize.h \
+		Absolut/pdb.h \
 		Ymir/plot3d.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o delimain.o Delicab/delimain.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o delimain.o Absolut/delimain.cpp
 
-topology.o: Delicab/topology.cpp Delicab/topology.h \
+topology.o: Absolut/topology.cpp Absolut/topology.h \
 		Ymir/ymir.h \
 		Ymir/lattice.h \
 		Ymir/compact.h \
@@ -477,13 +476,13 @@ topology.o: Delicab/topology.cpp Delicab/topology.h \
 		Ymir/receptorligand.h \
 		Ymir/fastaffinity.h \
 		Ymir/plot3d.h \
-		Delicab/fileformats.h \
-		Delicab/motifFeatures.h \
-		Delicab/importrepertoire.h \
-		Delicab/antigenLib.h \
+		Absolut/fileformats.h \
+		Absolut/motifFeatures.h \
+		Absolut/importrepertoire.h \
+		Absolut/antigenLib.h \
 		Tools/distribution.h \
 		Tools/zaprandom.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o topology.o Delicab/topology.cpp
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o topology.o Absolut/topology.cpp
 
 ####### Install
 

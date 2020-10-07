@@ -32,15 +32,15 @@
 
 using namespace std;
 
-// This is Delicab (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
+// This is Absolut (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
 
 // Three ways to compile it:
-//      Using Delicab.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
+//      Using Absolut.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
 //          this .pro file automatically includes "#define ALLOW_GRAPHICS", that will include the openGL code (see plot3d2h).
-//      Using DelicabNoLib.pro, it includes only the code to generate bindings. No GUI, no openGL. Can be compiled on any computer without any pre-installed library.
+//      Using AbsolutNoLib.pro, it includes only the code to generate bindings. No GUI, no openGL. Can be compiled on any computer without any pre-installed library.
 //          this .pro file automally includes "#define NO_QT" that will exclude any Qt dependent code, so pdb.h is not included and neither latFit.
 //          ALLOW_GRAPHICS is node defined, so the openGL code is also excluded
-//      Using DelicabMPI.pro, it includes only the code to generate bindings, but allows the use of MPI.
+//      Using AbsolutBoLibMPI.pro, it includes only the code to generate bindings, but allows the use of MPI.
 //          additionnaly, it includes "#define ALLOW_GRAPHICS", and the MPI library is included/linked, and some scripts are made parallel.
 
 #ifndef NOQT
@@ -52,7 +52,7 @@ using namespace std;
 #include "mpi.h"
 // to run from qtreator,
 // add a new executable in the run panel => mpiexec.exe
-// command: -n 2 release/DelicabNoLib.exe repertoire 1ADQ ShortSequences.txt
+// command: -n 2 release/AbsolutNoLib.exe repertoire 1ADQ ShortSequences.txt
 // and add the working folder as the main compiling one
 //https://stackoverflow.com/questions/31783667/set-number-of-processes-mpi-in-cmake-project-at-qtcreator
 #endif
@@ -67,10 +67,10 @@ string getHelp(int argc, char** argv){
     if(argc < 1) return string("Executable with no name?");
     stringstream res;
     string programName = string(argv[0]).substr(string(argv[0]).find_last_of("/\\") + 1);
-    res << " -- How to use Delicab -- \n";
+    res << " -- How to use Absolut -- \n";
     res << " \n";
     #ifndef NOQT
-    res << " ====== !!! Note: Option 1 and 7 are not available because they need libraries (Qt, latfit) - use Delicab.pro for that ====== !!!" << endl;
+    res << " ====== !!! Note: Option 1 and 7 are not available because they need libraries (Qt, latfit) - use Absolut.pro for that ====== !!!" << endl;
     #endif
     #ifdef USE_MPI
     res << " ====== Note: you are using the parallelized version, using MPI (interesting for option 2 only). For the other options, only one CPU will be used ===== " << endl;
@@ -565,7 +565,7 @@ int option1(string PDB_ID, string chains, double resolution, string typeDiscrete
     a2->show();
     appl.exec();
     #else
-    cerr << "You are intending to run the graphical interface of Zapotec. Please make sure to use Zapotec.pro and that NOQT / NO_LIBS are not defined." << endl;
+    cerr << "You are intending to run the graphical interface of Absolut. Please make sure to use Zapotec.pro and that NOQT / NO_LIBS are not defined." << endl;
     #endif
     return 0;
 }
@@ -795,7 +795,7 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
                 cout << "     its calculation can take typically 12 to 50 hours, so we do not recompute structures inside " << endl;
                 cout << "     the 'repertoire' option, which is made to treat lots of sequences in multithreads, and the " << endl;
                 cout << "     calculation of structures is not multithreaded, so it would waste resources." << endl;
-                cout << "     => Please either find the structures file on the delicab server, " << endl;
+                cout << "     => Please either find the structures file on the Absolut server, " << endl;
                 cout << "     or run this program with the option 'singleBinding' and one CDR3 AA sequence, it will compute " << endl;
                 cout << "     the structures and save them in the current folder." << endl;
                 cout << "\n";
