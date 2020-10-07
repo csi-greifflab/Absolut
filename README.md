@@ -117,7 +117,7 @@ Details for each use-case:
 - **1CZ8discretized5.25FuC.pdb**: discretized chains outputed from LatFit
 - **1CZ8_VWInLattice.txt**: Description of the discretized (lattice) antigen [Each chain is described as a starting position in the lattice (6-digits number) and a list of moves in space (straight S, up U, down D, left L, right R). See ‘info_position’ to convert lattice positions.
 
-![Discretization](doc/images/discretization.png?raw=true)
+![Discretization](doc/images/discretize.png?raw=true)
 
 ### Discretization of antigens WITH user interface
 
