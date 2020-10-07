@@ -10,7 +10,8 @@ HEADERS += \
     motifFeatures.h \
     selfEvo.h \
 	poolStructs.h \
-    quality.h
+    quality.h \
+    topology.h
 
 SOURCES += \
     antigenLib.cpp \
@@ -22,12 +23,13 @@ SOURCES += \
     selfEvo.cpp \
     quality.cpp \
 	poolStructs.cpp \
-    delimain.cpp
+    delimain.cpp \
+    topology.cpp
 
 
 
-win32: TARGET = DelicabNoLib
-unix: TARGET = DelicabNoLib
+win32: TARGET = AbsolutNoLib
+unix: TARGET = AbsolutNoLib
 
 QMAKE_CXXFLAGS += "-Wno-old-style-cast" "-Wno-shorten-64-to-32" "-Wno-sign-conversion" "-Wno-old-style-cast" "-Wno-implicit-int-float-conversion"
 

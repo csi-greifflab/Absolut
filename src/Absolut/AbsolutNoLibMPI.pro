@@ -1,46 +1,63 @@
-include("../Ymir/Ymir.pri")
-include("../latFit/latFit.pri")
+include("../Ymir/YmirNoGL.pri")
+
+DEFINES += "USE_MPI"
+DEFINES += "NOQT"
+DEFINES += "NO_LIBS"
+CONFIG -= QT
 
 HEADERS += \
     antigenLib.h \
-    epitope.h \
-    fileformats.h \
-    html.h \
+	epitope.h \
+	fileformats.h \
+	html.h \
     importrepertoire.h \
     motifFeatures.h \
-    poolstructs.h \
     selfEvo.h \
-    discretize.h \
-    pdb.h \
-    ../Tools/dirent.h \
+	poolStructs.h \
     quality.h \
     topology.h
 
 SOURCES += \
     antigenLib.cpp \
-    epitope.cpp \
+	epitope.cpp \
     fileformats.cpp \
     html.cpp \
     importrepertoire.cpp \
     motifFeatures.cpp \
-    oldScripts.cpp \
-    poolstructs.cpp \
     selfEvo.cpp \
-    discretize.cpp \
-    pdb.cpp \
     quality.cpp \
+	poolStructs.cpp \
     delimain.cpp \
     topology.cpp
 
-FORMS += \
-    pdb.ui
 
-win32: TARGET = Delicab12
-unix: TARGET = Delicab12
+win32: TARGET = AbominationMPI
+unix: TARGET = AbominationMPI
 
 QMAKE_CXXFLAGS += "-Wno-old-style-cast" "-Wno-shorten-64-to-32" "-Wno-sign-conversion" "-Wno-old-style-cast" "-Wno-implicit-int-float-conversion"
 
-QT += core gui widgets
+LIBS += -pthread
+
+win32:{
+    LIBS += -LC:/MyPrograms/MSMPI_SDK/Lib/x64/ -lmsmpi
+    INCLUDEPATH += C:/MyPrograms/MSMPI_SDK/Include/
+    DEPENDPATH += C:/MyPrograms/MSMPI_SDK/Lib/x64/
+}
+
+unix: {
+	QMAKE_CXX = mpicxx
+	QMAKE_CXX_RELEASE = $$QMAKE_CXX
+	QMAKE_CXX_DEBUG = $$QMAKE_CXX
+	QMAKE_LINK = $$QMAKE_CXX
+	QMAKE_CC = mpicc
+
+	QMAKE_CFLAGS += $$system(mpicc --showme:compile)
+	QMAKE_LFLAGS += $$system(mpicxx --showme:link)
+	QMAKE_CXXFLAGS += $$system(mpicxx --showme:compile) -DMPICH_IGNORE_CXX_SEEK
+	QMAKE_CXXFLAGS_RELEASE += $$system(mpicxx --showme:compile) -DMPICH_IGNORE_CXX_SEEK
+}
+
+# This also sets the correct compile and link flags in addition to changing the linker to mpicxx as well. The
 
 #https://gcc.gnu.org/onlinedocs/gcc-4.9.2/gcc/Warning-Options.html
 CONFIG += warn_off

@@ -1065,11 +1065,13 @@ vector<vector<double> >* optionPre7(string ID_antigen){ //, string originalPDBon
     cout << "Chains are " << cutName[1] << endl;
 
     // First, needs to rediscretize the original antigen to get the good coordinates,
+#ifndef NOQT
     char* argv[] = {(char*) "Nothing!"};
     int argc = 1;
     QApplication appl(argc, argv);
     PDB* a2 = new PDB(cutName[0], cutName[1], false, 5.25, "FuC");
     a2->show();
+
 
     cerr << "First step OK" << endl;
     // note: this function will make sure that the PDB is downloaded or available in the running folder.
@@ -1088,7 +1090,12 @@ vector<vector<double> >* optionPre7(string ID_antigen){ //, string originalPDBon
     vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions(cutName[0] + ".pdb", "LH", "FuC");
     vector<vector<double> >* transformed = new vector<vector<double> >(pooledPDBtoLattice(positionsAB, a.initXAxis, a.initYAxis, a.listPositions[0]));
 
+
     return transformed;
+#else
+    return nullptr;
+#endif
+
 //#ifdef ALLOW_GRAPHICS
 //    glDisplay(); // this clears everything,
 //    //addToDisplay(P3, false);
@@ -1180,6 +1187,7 @@ void option7(string ID_antigen, bool generateHotspots, string bindingDatasetFile
     }
 
     // puts the protein
+    #ifdef ALLOW_GRAPHICS
     addToDisplay(AG.first, true);
     if(transformed == nullptr){
         set<int>* s = new set<int>(AG.second.begin(), AG.second.end());
@@ -1194,6 +1202,7 @@ void option7(string ID_antigen, bool generateHotspots, string bindingDatasetFile
       //  displayLigand(AG.first, AG.second, true, false); // always visible, yes do loop and do not show forbidden (that would remove the antibody if optionPre7)
     //}
     glutMainLoop();
+    #endif
 }
 
 string generateBatchFLORIDA(string AntigenName, string fileCDR3s, bool test){
@@ -1381,5 +1390,6 @@ void info_fileNames(string ID_antigen){
     int minInteract = 11;
     cout << "   ... loading antigen " << AntigenName << " from the library" << endl;
     std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
-    cout << "Structures are " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;
+    cout << "Pre-calculated structures are in " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;
+    cout << "use:\nwget http://philippe-robert.com/Absolut/Structures/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second)<< endl;
 }

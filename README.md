@@ -1,2 +1,268 @@
 # Absolut
 Unconstrained lattice antibody-antigen bindings generator
+**Absolut** 
+- takes PDB antigens, converts them into lattice representation with integer positions. 
+- takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
+- generates features of antibody-antigen bindings directly usable for Machine Learning
+
+The database generated with Absolut! is available at [philippe-robert.com/Absolut/Database/](philippe-robert.com/Absolut/Database/).
+
+## Installation
+
+Absolut was written in C++. 
+
+Three versions are provided with more or less library requirements.
+- All versions require **a C++ compiler**.
+- The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
+
+**AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization.
+```bash
+cd src
+make		# This creates 'AbsolutNoLib' executable.
+```
+
+**AbominationMPI** is the MPI parallelized version for high throughput repertoire bindings generation. 
+- requires **MPI compiler and headers** required
+```bash
+cd src
+#Depending on your MPI compiler,
+make MPIcxx
+#or
+make MPIc++
+#or
+make MPIgxx
+# This creates 'AbominationMPI' executable.
+```
+
+
+**Absolut** is the full version
+- requires **freeglut library** (or another other C++ glut library)
+- requires the **Qt framework**
+Help for installing these libraries (especially in Windows) is provided in the documentation
+It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NO_QT in common.h
+```bash
+cd src
+make		#This creates both Absolut and AbsolutNoLib
+```
+
+
+Alternately, if you have installed the Qt framework with qtcreator, 
+```bash
+qtcreator Absolut/Absolut.pro
+#or
+qtcreator Absolut/AbsolutNoLib.pro
+#or
+qtcreator Absolut/AbsolutNoLibMPI.pro
+```
+
+*Note, the used libraries Latfit, pdb-tools and gsl are provided inside Absolut with their compatible version*
+
+![Absolut! Package overview](src/doc/images/package.png?raw=true)
+
+
+## Usage
+
+
+
+Calling Absolut alone shows the list of available options.
+```bash
+./Absolut 
+#or
+./AbsolutNoLib
+```
+
+Note: all commands are the same for *./Absolut* or *./AbsolutNoLib*
+
+
+All-in-one example (plan 3GB of disk space, 2 GB memory and 500MB download)
+```bash
+#With ./Absolut or ./AbsolutNoLib:
+./Absolut discretize 1CZ8 VW 5.25 FuC
+./Absolut listAntigens
+./Absolut info_fileNames 1FBI_X
+wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+./Absolut singleBinding 1FBI_X CARAAHKLARIPK
+./Absolut repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3 is a provided example list of CDR3s
+./Absolut getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
+
+#Only possible with full ./Absolut
+./Absolut visualize 1FBI_X 
+./Absolut visualize 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5
+./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 
+```
+
+Details for each use-case:
+
+### Discretization of antigens WITHOUT user interface
+
+```bash
+./Absolut discretize 1CZ8 VW 5.25 FuC
+```
+
+*Inputs*	
+- **PDB_ID**: The 4-character name of the PDB to discretize (will automatically download if not in the folder)
+- **Chains**: The names of the chains to be discretized (one char per chain, put together)
+- **Resolution**: The resolution of the 3D lattice [default 5.25]
+- **TypePos	The**: type of positions used for discretization [CA for Carbon Alpha, CoM for Centroid center of the side-chain only, and FuC for fused center of the whole AA – default FuC]
+
+*Outputs* 
+- PDB and fasta files are downloaded from the PDB server
+- 1CZ8deIns.pdb PDB with removed insertions (using pdb-tools)
+- 1CZ8_VWprepared.pdb new PDB with only the chains of interest
+- 1CZ8discretized5.25FuC.pdb discretized chains outputed from LatFit
+- 1CZ8_VWInLattice.txt Description of the discretized antigen [Each chain is described as a starting position in the lattice (6-digits number) and a list of moves in space (straight S, up U, down D, left L, right R). See ‘info_position’ to convert lattice positions.
+
+![Discretization](src/doc/images/discretization.png?raw=true)
+
+### Discretization of antigens WITH user interface
+
+```bash
+./Absolut discretize
+```
+
+The inputs are decided from the user interface (and can also be provided in the command line). Identical outputs as above. Possible to export pictures during visualization inside the interface (command 'O', see documentation on visualization).
+
+
+### Get the list of available lattice antigens
+
+
+```bash
+./Absolut listAntigens
+```
+
+
+*Output*
+```bash
+0	1FNS_A
+1	1ADQ_A
+2	1FSK_A
+3	1FBI_X
+4	1H0D_C
+```
+
+The library of discretized antigens is defined inside *antigenLib.cpp*. Their name is "PDB_Chains", for instance "1CZ8_VW". More than 150 discretized antigens are already available. If you wish to add your own, please manually add them into antigenLib.cpp.
+
+
+### Generation of a bindings of CDR3s on a discretized antigen from the library
+
+This takes a discretized antigen and a list of CDR3s sequences and returns the best binding structure of each 11-mers of each CDR3 around the antigen.
+
+There are two ways. The singleBinding option allows to calculate for one CDR3 in particular and is good for testing. 
+The repertoire option allows to process a text file with a list of CDR3s.
+
+Step 1: Get information on the requested pre-computed files
+
+```bash
+./Absolut info_fileNames 1FBI_X
+```
+
+*Output*
+```bash
+Pre-calculated structures are in SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+use:
+wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+```
+
+Step 2: calculate the bindigns, after the precomputed structure file is in the same (or parent) folder
+
+```bash
+#For one CDR3 only
+./Absolut singleBinding 1FBI_X CARAAHKLARIPK
+```
+
+```bash
+#For a list of CDR3s provided in ListCDR3s.txt
+./Absolut repertoire 1FBI_X ListCDR3s.txt
+
+#Or, without MPI, the program is still paralellized to use multiple threads, for instance 20 here
+./Absolut repertoire 1FBI_X ListCDR3s.txt 20
+
+#Or, in order to use MPI, for instance using 50 threads for each MPI process
+mpiexec –n NbProcesses ./AbominationMPI repertoire 1FBI_X ListCDR3s.txt 50
+```
+
+*Inputs*
+- **Antigen_ID**: The ID of the antigen in the library. 
+- **ListCDR3s.txt**: a text file with a list of CDR3s. Two columns, ID and CDR3 Amino Acid sequence, tab-separated, no header:
+```bash
+1	CAGPSTTVPYYFDYW
+2	CARAYYSNDYW
+3	CARWDDYDDWFAYW
+4	CARESSGYGYW
+5	CARYNYGPMDYW
+6	CARGDSFDYW
+7	CARVPNWDVNWSFDVW
+...
+```
+Note, only the CDR3s with 11 AAs or more will be considered.
+- A precomputed structure file in the folder (or parent folder) where Absolut is called. This is a text file containing the list of all pre-calculated prossible bindings.
+You can use the wget command provided when calling *./Absolut info_fileNames*. We have precalculated these files for the library antigens and made them available in [http://philippe-robert.com/Absolut/Structures/](http://philippe-robert.com/Absolut/Structures/)
+Note, it is possible to recompute the structure files for a library antigen or any new home-made antigens, by using the command singleBinding above, that will regenerate the files if not present in the folder.
+The repertoire option stops if the files are not available.
+
+
+*Outputs*
+File called "1FBI_XFinalBindings_Process_1_Of_1.txt", containing the structural annotation on how each 11-mer (Slide) binds to the antigen, with its binding energy and its structure (position-list of moves)
+A new ID is generated for each slide, with the CDR3ID from the input file followed with \_ and the number of the slide and a/b/c... if different structures share the best binding energy. 
+The best way a CDR3 binds to the antigen is annotated with Best=true.
+This file format is called **Raw Binding** dataset
+```bash
+#Antigen 1FBI
+ID_slide_Variant      CDR3		Best	Slide	Energy	Structure
+42881_00a	CARDIVTTWPYYAMDYW	false	CARDIVTTWPY	-54.77	129120-DSLLRRDDSD
+42881_01a	CARDIVTTWPYYAMDYW	false	ARDIVTTWPYY	-61.49	125152-UUUSURUDUD
+42881_02a	CARDIVTTWPYYAMDYW	false	RDIVTTWPYYA	-54.07	141278-SLSSRRSDDS
+42881_03a	CARDIVTTWPYYAMDYW	false	DIVTTWPYYAM	-59.4	121119-RUSLLSDDUD
+42881_03b	CARDIVTTWPYYAMDYW	false	DIVTTWPYYAM	-59.4	116959-USSDDSRRLR
+42881_04a	CARDIVTTWPYYAMDYW	false	IVTTWPYYAMD	-62.9	121055-USDDSRRLRL
+42881_05a	CARDIVTTWPYYAMDYW	false	VTTWPYYAMDY	-64.95	137374-URDSRUURDU
+42881_06a	CARDIVTTWPYYAMDYW	true	TTWPYYAMDYW	-65.09	141405-SSSDRRDLRS
+42882_00a	CARDKGAYSNSWYFDVW	false	CARDKGAYSNS	-47.55	137312-RULUUSUSDS
+42882_01a	CARDKGAYSNSWYFDVW	true	ARDKGAYSNSW	-48.6	129120-DSLSDLSLLD
+…
+```
+
+![Repertoire](src/doc/images/repertoire.png?raw=true)
+
+### Analyze the 3D binding features from a raw binding
+
+
+```bash
+./Absolut getFeatures 1FBI_X 1FBI_XRawBindings.txt outputFeaturesFile.txt
+#or, it is possible to precise the binding degree in the analysis by adding the degree (1 here) and true/false to include the degree into the encodings
+./Absolut getFeatures 1FBI_X 1FBI_XRawBindings.txt outputFeaturesFile.txt 1 true
+```
+
+*Inputs*
+- **Antigen ID** 
+- **1FBI_XRawBindings.txt**: The raw binding file generated from the *repertoire* option below
+- **outputFeaturesFile.txt**: The file that will be created with the binding features 
+- **degree**(optional): this specify that only AA interactions of degree equal or more than X (between antibody and antigen) are taken into the encoding
+- **showDegreeInAnalyses**: this will add the degree into the coarse grained encodings, like the motif XX-X-X will become X1X2--X1--X3.
+
+*Outputs*
+- **outputFeaturesFile.txt** with the same lines as the input line, but extended with one column per feature.
+The features are: 
+
+![List of features](src/doc/images/features.png?raw=true)
+
+*Note: you might want to keep only the best Slides per CDR3 (Best=true) from the raw binding file before generating the features.*
+
+### Visualize antigens and bindings in 3D (Needs full Absolut version)
+
+To visualize an antigen from the library
+```bash
+./Absolut visualize 1FBI_X
+```
+
+To include the bindings from a raw binding with an optional energy threshold
+```bash
+./Absolut visualize 1FBI_X 1FBI_XRawBindings.txt
+./Absolut visualize 1FBI_X 1FBI_XRawBindings.txt -95.5
+```
+
+### Generate binding hotspots from a raw binding
+
+```bash
+./Absolut hotspots 1FBI_X 1FBI_XRawBindings.txt -95.5
+```

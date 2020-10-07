@@ -144,10 +144,11 @@ DIST          = Delicab/.qmake.stash \
 		Delicab/quality.cpp \
 		Delicab/poolstructs.cpp \
 		Delicab/delimain.cpp
-QMAKE_TARGET  = DelicabNoLib
+QMAKE_TARGET  = AbsolutNoLib
 DESTDIR       = 
 TARGET        = AbsolutNoLib
 TARGETMPI     = AbominationMPI
+TARGETFULL    = Absolut
 
 
 
@@ -165,6 +166,7 @@ Makefile: Delicab/DelicabNoLib.pro .qmake.stash \
 		Ymir/YmirNoGL.pri \
 		Delicab/DelicabNoLib.pro
 	$(QMAKE) -o Makefile Delicab/DelicabNoLib.pro
+Makefile: TARGET = $(TARGETFULL)
 
 	
 .qmake.stash:
