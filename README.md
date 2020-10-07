@@ -18,12 +18,6 @@ Three versions are provided with more or less library requirements: *Absolut*, *
 - The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
 
 
-```bash
-#In linux:
-
-```
-
-
 **AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization.
 ```bash
 cd src
@@ -71,6 +65,7 @@ sudo apt-get install libgsl-dev
 
 Installing on Windows:
 
+![Installing requested libraries in Windows - see last page](doc/HowToAbsolut.pdf?raw=true)
 
 Compiling 
 
@@ -129,7 +124,7 @@ wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27
 ./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 
 ```
 
-Details for each use-case:
+## Step-by-step use cases
 
 ### Discretization of antigens WITHOUT user interface
 
@@ -151,6 +146,8 @@ Details for each use-case:
 - **1CZ8_VWInLattice.txt**: Description of the discretized (lattice) antigen [Each chain is described as a starting position in the lattice (6-digits number) and a list of moves in space (straight S, up U, down D, left L, right R). See ‘info_position’ to convert lattice positions.
 
 ![Discretization](doc/images/discretize.png?raw=true)
+
+![Discretization](doc/images/GUI.png?raw=true)
 
 ### Discretization of antigens WITH user interface
 
@@ -302,6 +299,7 @@ To include the bindings from a raw binding with an optional energy threshold
 ./Absolut visualize 1FBI_X 1FBI_XRawBindings.txt
 ./Absolut visualize 1FBI_X 1FBI_XRawBindings.txt -95.5
 ```
+![Shortcuts during visualization](doc/images/shortcuts.png?raw=true)
 
 ### Generate binding hotspots from a raw binding
 
