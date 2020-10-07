@@ -1,0 +1,95 @@
+// $Id: LatticeNeighborhood.icc,v 1.2 2016/08/08 12:41:56 mmann Exp $
+
+
+namespace biu
+{
+	
+	inline
+	LatticeNeighborhood::LatticeNeighborhood(	const MoveAlphabet* moveAlph_, 
+												const NeighSet& neighbors)
+		:	moveAlph(moveAlph_), 
+			neighSet(neighbors),	
+			neighVec(moveAlph->getAlphabetSize(),NULL)
+	{
+		for (NeighSet::const_iterator it = neighSet.begin(); 
+				it != neighSet.end(); it++)
+		{
+			neighVec[moveAlph->getIndex(it->getMove())] = &(*it);
+			vec2neigh[(IntPoint)*it] = &(*it);
+		}
+		#ifndef NDEBUG	// pruefen ob alle moves in neighSet vertreten sind
+			for (std::vector<NeighborVector*>::size_type i=0; 
+					i< neighVec.size(); i++)
+				assertbiu( neighVec[i] != NULL , 
+"Incomplete initialisation of the neighbor vectors. Not all moves available.");
+		#endif
+	}
+	
+	inline
+	LatticeNeighborhood::LatticeNeighborhood(	const LatticeNeighborhood& nh ) 
+		:	moveAlph(nh.moveAlph), 
+			neighSet(nh.neighSet),	
+			neighVec(moveAlph->getAlphabetSize(),NULL)
+	{
+		for (NeighSet::const_iterator it = neighSet.begin(); 
+				it != neighSet.end(); it++)
+		{
+			neighVec[moveAlph->getIndex(it->getMove())] = &(*it);
+			vec2neigh[IntPoint(*it)] = &(*it);
+		}
+	}
+	
+		
+	inline
+	LatticeNeighborhood::~LatticeNeighborhood()
+	{
+	}
+	
+	inline
+	unsigned int 
+	LatticeNeighborhood::size() const {
+		return neighVec.size();
+	}
+	
+	inline
+	bool 
+	LatticeNeighborhood::isElement( const IntPoint& vector) const {
+		return neighSet.find(vector) != neighSet.end();
+	}
+	
+	inline
+	const NeighborVector&
+	LatticeNeighborhood::getElementByIndex(unsigned int index) const {
+		assertbiu(index >= 0 && index < size(),
+	"The element's index has to be in [0, neighborhood's number of elements");
+		return *(neighVec[index]);
+	}
+
+	inline
+	const NeighborVector& 
+	LatticeNeighborhood::getElement(const IntPoint& vector) const {
+		assertbiu(isElement(vector),
+			"tried to get the neighbor vector of a non neighboring vector: (" <<
+			vector.getX() << "," << vector.getY() << "," << vector.getZ() << ")");
+		return *(vec2neigh.find(vector)->second);
+	}
+	
+	inline
+	const NeighborVector& 
+	LatticeNeighborhood::getElement(const Move& move) const {
+		return *(neighVec[moveAlph->getIndex(move)]);
+	}		
+	
+	inline
+	LatticeNeighborhood::const_iterator 
+	LatticeNeighborhood::begin() const {
+		return neighSet.begin();
+	}
+
+	inline
+	LatticeNeighborhood::const_iterator 
+	LatticeNeighborhood::end() const {
+		return neighSet.end();
+	}
+
+} // namespace biu

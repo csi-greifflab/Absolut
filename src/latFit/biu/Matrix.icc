@@ -1,0 +1,401 @@
+// $Id: Matrix.icc,v 1.2 2016/08/08 12:42:00 mmann Exp $
+
+
+#include "biu/assertbiu.hh"
+
+template <class T> inline
+std::istream&
+operator>>(std::istream& in, biu::Matrix<T>& m)
+{
+	for (size_t i = 0; i < m.numRows(); i++)
+	{
+		for (size_t j = 0; j < m.numColumns(); j++)
+		{
+			in >> m[i][j];
+		}
+	}
+	return in;
+}
+
+template <class T> inline
+std::ostream&
+operator << (std::ostream& out, const biu::Matrix<T>& m)	{
+	for (size_t i = 0; i < m.numRows(); i++)
+	{
+		for (size_t j = 0; j < m.numColumns(); j++)
+		{
+			out << m[i][j] << " ";
+		}
+		out << "\n";
+	}
+	return out;
+}
+
+namespace biu {
+
+	template <class T> inline
+	Matrix<T>::Matrix()
+	  :	rows(0), cols(0), v(NULL)
+	{
+	}
+
+	template <class T> inline
+	Matrix<T>::Matrix(const size_t r, const size_t c)
+	  :	rows(r), cols(c), v(NULL)
+	{
+		  // create matrix
+		v = new T*[rows];
+		v[0] = new T[rows*cols];
+		for (size_t i = 1; i < rows; i++)
+			v[i] = v[i-1] + cols;
+	}
+
+	template <class T> inline
+	Matrix<T>::Matrix(const size_t r, const size_t c, const T &val)
+	  :	rows(r), cols(c), v(NULL)
+	{
+		  // create matrix
+		v = new T*[rows];
+		v[0] = new T[rows*cols];
+		for (size_t row = 1; row < rows; row++)
+			v[row] = v[row-1] + cols;
+		  // fill matrix
+		for (size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				v[i][j] = val;
+
+	}
+
+
+	template <class T> inline
+	Matrix<T>::Matrix( const size_t r, const size_t c, const T mat[])
+	  :	rows(r), cols(c), v(NULL)
+	{
+		  // create matrix
+		v = new T*[rows];
+		v[0] = new T[rows*cols];
+		for (size_t row = 1; row < rows; row++)
+			v[row] = v[row-1] + cols;
+		  // copy matrix
+		for (size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				v[i][j] = mat[i*cols+j];
+
+	}
+
+	template <class T> inline
+	Matrix<T>::Matrix(const Matrix<T> &mat)
+	  :	rows(mat.numRows()), cols(mat.numColumns()), v(NULL)
+	{
+		  // create matrix
+		v = new T*[rows];
+		v[0] = new T[rows*cols];
+		for (size_t row = 1; row < rows; row++)
+			v[row] = v[row-1] + cols;
+		  // copy matrix
+		for (size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				v[i][j] = mat[i][j];
+
+	}
+
+	template <class T> inline
+	Matrix<T> & Matrix<T>::operator =(const Matrix<T> &mat)
+	{
+		if (this != &mat)
+		{	  // check if dimensions have to be changed 
+			if ( (rows*cols) != (mat.rows * mat.cols) ) {
+				if (v != NULL) { // delete 
+					delete[] (v[0]);
+					delete[] (v);
+				}
+				  // set new dimensions
+				rows = mat.rows;
+				cols = mat.cols;
+				  // create matrix
+				v = new T*[rows];
+				v[0] = new T[rows*cols];
+				for (size_t row = 1; row < rows; row++)
+					v[row] = v[row-1] + cols;
+			} else {
+				  // change dimensions if just row/colum ratio has changed
+				rows = mat.rows;
+				cols = mat.cols;
+			}
+			  // fill matrix by copying
+			for (size_t i = 0; i < rows; i++)
+				for(size_t j = 0; j < cols; j++)
+					v[i][j] = mat[i][j];
+		}
+		return *this;
+	}
+
+	template <class T> inline
+	Matrix<T> & Matrix<T>::operator =(const T &val)
+	{
+		  // reinit all elements with val
+		for (size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				v[i][j] = val;
+		return *this;
+	}
+
+	template <class T> inline
+	T* const
+	Matrix<T>::operator [](const size_t i)
+	{
+		assertbiu(i<rows,"requested row index is out of range");
+		return v[i];
+	}
+
+	template <class T> inline
+	const T* const
+	Matrix<T>::operator [](const size_t i) const
+	{
+		assertbiu(i<rows,"requested row index is out of range");
+		return v[i];
+	}
+	
+	template<class T> inline
+	T 
+	Matrix<T>::at(const size_t r, const size_t c) const
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		return v[r][c];
+	}
+	
+	template<class T> inline
+	T&
+	Matrix<T>::at(const size_t r, const size_t c)
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		return v[r][c];
+	}
+
+	template <class T> inline
+	size_t 
+	Matrix<T>::numRows() const
+	{
+		return rows;
+	}
+
+	template <class T> inline
+	size_t Matrix<T>::numColumns() const
+	{
+		return cols;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator +(const Matrix<T> &mat)
+	{
+		assertbiu(mat.rows == rows, "row numbers of both matrices differ");
+		assertbiu(mat.cols == cols, "column numbers of both matrices differ");
+		Matrix<T> m(rows, cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				m[i][j] = v[i][j] + mat[i][j];
+		return m;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator +(const T &t)
+	{
+		Matrix<T> m(rows, cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				m[i][j] = v[i][j] + t;
+		return m;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator -(const Matrix<T> &mat)
+	{
+		assertbiu(mat.rows == rows, "row numbers of both matrices differ");
+		assertbiu(mat.cols == cols, "column numbers of both matrices differ");
+		Matrix<T> m(rows, cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				m[i][j] = v[i][j] - mat[i][j];
+		return m;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator -(const T &t)
+	{
+		Matrix<T> m(rows, cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				m[i][j] = v[i][j] - t;
+		return m;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator *(const Matrix<T> &mat) const
+	{
+		assertbiu(mat.rows == cols, "given row number differs column number");
+		assertbiu(cols > 0, "matrix has no columns");
+		Matrix m(rows, mat.cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < mat.cols; j++)
+			{
+				m[i][j] = v[i][0] * mat[0][j];
+				for (size_t k = 1; k < cols; k++)
+					m[i][j] += v[i][k] * mat[k][j];
+			}
+		return m;
+	}
+
+	template <class T> inline
+	Matrix<T> Matrix<T>::operator *(const T &t) const
+	{
+		Matrix<T> m(rows, cols);
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				m[i][j] = v[i][j] * t;
+		return m;
+	}
+
+	
+	template <class T> inline
+	std::vector<T> Matrix<T>::operator *(const std::vector<T> &vec) const
+	{
+		assertbiu(vec.size() == cols, "given column vector length differs column number");
+		assertbiu(cols > 0, "matrix has no columns");
+		
+		std::vector<T> res(rows);
+		
+		for (size_t i = 0; i < rows; i++)
+		{
+			res[i] = v[i][0] * vec[0];
+			for (size_t j = 1; j < cols; j++) 
+				res[i] += v[i][j]*vec[j];
+		}
+		return res;
+	}
+
+	
+	template <class T> inline
+	Matrix<T>& Matrix<T>::operator*= (const Matrix<T> &mat)
+	{
+		*this = (*this) * mat;
+		return *this;
+	}
+
+	template <class T> inline
+	Matrix<T>& Matrix<T>::operator*= (const T &t)
+	{
+		for (size_t i = 0; i < rows; i++)
+			for (size_t j = 0; j < cols; j++)
+				v[i][j] *= t;
+		return *this;
+	}
+
+	template <class T> inline
+	bool Matrix<T>::operator ==(const Matrix<T> &mat) const
+	{
+		  // compare dimensions
+		if ( rows != mat.rows || cols != mat.cols )
+			return false;
+		  // comparison of all elements
+		for(size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				if( mat[i][j] != v[i][j] )
+					return false;
+		  // all is equal
+		return true;
+	}
+
+	template <class T> inline
+	bool Matrix<T>::operator ==(const T &t) const
+	{
+		  // comparison of all elements
+		for(size_t i = 0; i < rows; i++)
+			for(size_t j = 0; j < cols; j++)
+				if( t != v[i][j] )
+					return false;
+		  // all is equal
+		return true;
+	}
+
+	template <class T> inline
+	bool Matrix<T>::operator !=(const Matrix<T> &mat) const
+	{
+		return !(operator==(mat));
+	}
+
+	template <class T> inline
+	bool Matrix<T>::operator !=(const T &t) const
+	{
+		return !(operator==(t));
+	}
+
+	template <class T> inline
+	void Matrix<T>::resize(const size_t r, const size_t c)
+	{
+		if (r == rows && c == cols)
+			return;
+		size_t copyRows = std::min(rows, r); 
+		size_t copyCols = std::min(cols, c); 
+		rows = r;
+		cols = c;
+		  // create new matrix
+		T** tmp = new T*[rows];
+		tmp[0] = new T[rows*cols];
+		for (size_t row = 1; row < rows; row++)
+			tmp[row] = tmp[row-1] + cols;
+		  // copy old content
+		for (size_t i = 0; i<copyRows; i++)
+			for (size_t j=0; j<copyCols; j++)
+				tmp[i][j] = v[i][j];
+		  // delete old matrix content
+		if (v != NULL) {
+			delete[] (v[0]);
+			delete[] (v);
+		}
+		  // get pointer of temporary matrix
+		v = tmp;
+	}
+
+	template <class T> inline
+	void Matrix<T>::resize(const size_t r, const size_t c, const T& defVal)
+	{
+		  // get last row and column that was not filled in current matrix
+		const size_t lastRow = rows;
+		const size_t lastCol = cols;
+		  // resize matrix and copy all cells of (0,0)..(min(r,rows),min(c,cols))
+		resize(r,c);
+		  // fill remaining elements with default value
+		for ( size_t i = lastRow; i < r; i++)
+			for ( size_t j = 0; j < lastCol && j < c; j++)
+				v[i][j] = defVal;
+		for ( size_t i = 0; i < lastRow && i < r; i++)
+			for ( size_t j = lastCol; j < c; j++)
+				v[i][j] = defVal;
+		for ( size_t i = lastRow; i < r; i++)
+			for ( size_t j = lastCol; j < c; j++)
+				v[i][j] = defVal;
+	}
+	
+	template <class T> inline
+	Matrix<T>::~Matrix()
+	{
+		if (v != NULL)
+		{
+			delete[] (v[0]);
+			delete[] (v);
+		}
+	}
+
+	template <class T> inline
+	std::vector<T> 
+	Matrix<T>::columnVec(const size_t col) const {
+		std::vector<T> res(rows);
+		for (size_t i=0; i<rows; i++) {
+			res[i] = v[i][col];
+		}
+		return res;
+	}
+	
+} // namespace biu

@@ -1,0 +1,392 @@
+// $Id: Alphabet.icc,v 1.2 2016/08/08 12:42:00 mmann Exp $
+
+#include <biu/Alphabet.hh>
+#include <biu/assertbiu.hh>
+
+#include <cmath>
+
+namespace biu {
+	
+
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+	// Returns the size of the alphabet. 
+	// @return the number of elements in the alphabet
+	inline
+	size_t 
+	Alphabet::getAlphabetSize() const {
+		return alph2string.size();
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+	
+	// Returns the length of a alphabet element.
+	// @return the string length of one alphabet element
+	inline
+	size_t 
+	Alphabet::getElementLength() const { 
+		return elementLength;
+	}
+	
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+	inline
+	bool			
+	Alphabet::operator== (const Alphabet& alph2) const {
+		return string2alph == alph2.string2alph
+			&& alph2string == alph2.alph2string
+			&& elementLength == alph2.elementLength;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+	inline
+	bool			
+	Alphabet::operator!= (const Alphabet& alph2) const {
+		return string2alph != alph2.string2alph
+			&& alph2string != alph2.alph2string
+			&& elementLength != alph2.elementLength;
+	}
+
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+	inline
+	Alphabet::Sequence 
+	Alphabet::getSequence(const std::string& seqString) const {
+		assertbiu (seqString.length() % elementLength == 0,
+			"the sequence length has to be a multiple of the element length");
+			
+		Alphabet::Sequence seq(seqString.length() / elementLength,0);
+		Alphabet::Sequence::size_type seqPos = 0; 
+		for (std::string::size_type i=0; i<seqString.length(); 
+					i+= elementLength) {
+			seq[seqPos++] = getElement(seqString.substr(i,elementLength));
+		}
+		return seq;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+	inline
+	std::string	
+	Alphabet::getString(const Alphabet::Sequence& sequence) const {
+		std::string str(sequence.size()*elementLength,' ');
+		std::string::size_type i = 0, j = 0; 
+		for (Alphabet::Sequence::const_iterator it = sequence.begin(); 
+					it != sequence.end(); it++) {
+			for (j=0; j<elementLength; j++) {
+				str[i++] = alph2string.at(*it)[j];
+			}
+		}
+		return str;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+	inline
+	std::string 
+	Alphabet::getString(const Alphabet::AlphElem& elem) const {
+		assertbiu( elem < alph2string.size(), 
+			"elem is no valid element of the alphabet");
+		return alph2string.at(elem);
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+	inline
+	Alphabet::AlphElem 
+	Alphabet::getElement(const std::string& alphElemStr) const {
+		STR2ALPH_MAP::const_iterator member = string2alph.find(alphElemStr);
+		assertbiu(member != string2alph.end(),
+			"element '"+alphElemStr+"' is no member of the alphabet");
+		return member->second;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	bool	
+	Alphabet::isAlphabetString(const std::string& str) const {
+				// muss vielfaches der elementlaenge sein
+		bool retVal = (str.length() % elementLength == 0);
+		for (std::string::size_type i = 0; retVal && i< str.size(); 
+				i+=elementLength) {
+			retVal = 	string2alph.find(str.substr(i,elementLength)) 
+						!= string2alph.end();
+		}
+		return retVal;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+
+	inline
+	size_t 
+	Alphabet::getIndex(const AlphElem& elem) const {
+		assertbiu((size_t)elem < getAlphabetSize(),
+				"the the given AlphElem is no valid element of the alphabet");
+		return (size_t)elem;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline
+	size_t 
+	Alphabet::getIndex(const std::string& elemStr) const {
+		return getIndex(getElement(elemStr));
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline
+	Alphabet::AlphElem 
+	Alphabet::getElement(const size_t index) const {
+		assertbiu(index < getAlphabetSize(), 
+			"the index leaves the valid indices of the alphabet");
+		return index;
+	}
+	
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	bool 
+	Alphabet::isAlphabetSequence(const Alphabet::Sequence& seq) const {
+		const size_t size  = getAlphabetSize();
+		for (Sequence::const_iterator it = seq.begin(); it != seq.end(); it++) {
+			if ((size_t)*it > size)
+				return false;
+		}
+		return true;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::Alphabet(	const std::string& alphabetString, 
+						const size_t _elementLength)
+	 : elementLength(_elementLength) 
+	{
+		assertbiu (alphabetString.length() % elementLength == 0,
+	"length of the alphabetstring has to be multiple of the element length");
+			
+			 // initialisieren
+		alph2string = std::vector<std::string>(	
+							alphabetString.length() / elementLength, "");
+		AlphElem actElem = 0;
+		std::string actStr = "";
+		for (std::string::size_type i = 0; i<alphabetString.length(); 
+					i+= elementLength) {
+			actStr = alphabetString.substr(i,elementLength);
+			string2alph[actStr] = actElem;
+			alph2string[actElem] = actStr;
+			actElem++;
+		}
+		
+		  // calculate compression base
+		assertbiu(alph2string.size() > 1, "alphabet compression only possible for alphabet size > 1");
+		size_t numToCompress = (size_t) (log(256.) / log((double) alph2string.size()));
+		int alphSize = this->getAlphabetSize();
+		compressBase.resize(numToCompress, 1);
+		  // calculate alphSize^(numToCompress-i)
+		for (size_t i=(numToCompress-1); i-- > 0; ) {
+			compressBase[i] *= compressBase[i+1]*alphSize;
+		}
+	}
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::Alphabet(const std::vector<std::string> & alphabetStrings) {
+
+		size_t alphabetSize=alphabetStrings.size();
+
+		assertbiu (alphabetSize>0,"No init of empty alphabet allowed");
+		
+		elementLength = alphabetStrings[0].length();
+		
+#ifdef NDEBUG
+		{
+			size_t i;
+			for(i=0; i<alphabetSize; i++) {
+				assertbiu(alphabetStrings[i].length() == elementLength, 
+						  "All strings must have equal length");
+			}
+		}
+#endif
+		
+		alph2string = std::vector<std::string>(alphabetSize, "");
+		
+		AlphElem actElem = 0;
+		std::string actStr = "";
+		for (std::string::size_type i = 0; i<alphabetSize; i++) {
+			actStr = alphabetStrings[i];
+			string2alph[actStr] = actElem;
+			alph2string[actElem] = actStr;
+			actElem++;
+		}
+		
+		  // calculate compression base
+		size_t numToCompress = (size_t) (log(256.) / log((double) alph2string.size()));
+		compressBase.resize(numToCompress, 1);
+		  // calculate numToCompress^(numToCompress-i)
+		for (size_t i=(numToCompress-1); i-- > 0; ) {
+			compressBase[i] *= compressBase[i+1]*numToCompress;
+		}
+	}
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::~Alphabet() {		
+	}
+	
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::CSequence
+	Alphabet::compress(const Alphabet::Sequence& seq) const 
+	{
+			// ceil (s->size() / compressBase.size()) bytes are necessary to save the
+			// sequence
+		CSequence cs(
+		 (size_t) ceil((double) seq.size() / (double) compressBase.size()), 0);
+
+			// 1 byte = seq[0] * compressBase[0] 
+			//          + ... 
+			//          + seq[compressBase.size()-1] * compressBase[compressBase.size()-1]
+
+		for (size_t i = 0; i < seq.size(); i++) {
+			cs[i/compressBase.size()] += seq.at(i) * compressBase[i%compressBase.size()];
+		}
+	
+		return cs;
+	}
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::CSequence
+	Alphabet::compressS(const std::string& seqString) const 
+	{
+		
+		
+			// ceil (s->size() / compressBase.size()) bytes are necessary to save the
+			// sequence
+		CSequence cs(
+					 (size_t) ceil(	(double) seqString.size() 
+							 		/ (double) (elementLength*compressBase.size()))
+					, 0);
+
+			// 1 byte = seq[0] * compressBase[0] 
+			//          + ... 
+			//          + seq[compressBase.size()-1] * compressBase[compressBase.size()-1]
+
+		size_t ci = 0;
+		for (size_t i = 0; i < seqString.size(); i+=elementLength) {
+			cs[ci/compressBase.size()] 
+			   += getElement(seqString.substr(i,elementLength)) 
+			   		* compressBase[ci%compressBase.size()];
+			ci++;
+		}
+	
+		return cs;
+	}
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	Alphabet::Sequence
+	Alphabet::decompress(const Alphabet::CSequence & seq, 
+		const size_t seqLength) const 
+	{
+		assertbiu(seq.size() > 0, "no compressed sequence given (size==0)");
+			// create new Sequence to return
+		Sequence uncompressedSeq(seqLength, this->getElement(0));
+			// element of cs which is currently processed
+		unsigned char c = seq[0];
+
+		assertbiu(seqLength <= (seq.size()*compressBase.size()),
+		 "The compressed sequence holds more than <seqLength> many elements.");
+
+			// 1 byte = s[0] * compressBase[0]
+			//          + ... 
+		    //          + s[compressBase.size()-1] * compressBase[compressBase.size()-1]
+		size_t cIdx = 0;
+		for (size_t i = 0; i < seqLength; i++) {
+				// update c if new element of cs is processed
+			if (i%compressBase.size() == 0) {
+				c = seq[i/compressBase.size()];
+				cIdx = 0;  //< reset current index in compressBase 
+			}
+			uncompressedSeq[i] = this->getElement( c / compressBase[cIdx] );
+			c %= compressBase[cIdx];
+			cIdx++;
+		}
+
+		return uncompressedSeq;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	
+	inline
+	std::string
+	Alphabet::
+	decompressS(const CSequence& seq, const size_t seqLength) const
+	{
+		assertbiu(seq.size() > 0, "no compressed sequence given (size==0)");
+		  // create return string
+		std::string str;
+			// element of cs which is currently processed
+		unsigned char c = seq[0];
+	
+		assertbiu(seqLength <= (seq.size()*compressBase.size()),
+		 "The compressed sequence holds more than <seqLength> many elements.");
+	
+			// 1 byte = s[0] * compressBase[0]
+			//          + ... 
+		    //          + s[compressBase.size()-1] * compressBase[compressBase.size()-1]
+		size_t cIdx = 0;
+		for (size_t i = 0; i < seqLength; i++) {
+				// update c if new element of cs is processed
+			if (i%compressBase.size() == 0) {
+				c = seq[i/compressBase.size()];
+				cIdx = 0;  //< reset current index in compressBase 
+			}
+			  // append uncompressed element to string
+			str.insert(str.size(),
+					this->getString( 
+							this->getElement( c / compressBase[cIdx] ) 
+						));
+			c %= compressBase[cIdx];
+			cIdx++;
+		}
+
+		assertbiu(seqLength*elementLength==str.size()
+			, "the compressed sequence holds less than <seqLength> many elements.");
+
+		return str;
+	}
+	
+	
+} // namespace biu
+

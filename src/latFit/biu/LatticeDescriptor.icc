@@ -1,0 +1,53 @@
+// $Id: LatticeDescriptor.icc,v 1.2 2016/08/08 12:42:00 mmann Exp $
+
+
+namespace biu {
+	
+	inline
+	std::string			
+	LatticeDescriptor::getName() const {
+		return name;
+	}
+	
+	inline
+	const LatticeNeighborhood&		
+	LatticeDescriptor::getNeighborhood() const{
+		assertbiu( latNeighborhood != NULL, "no neighborhood available");
+		return *latNeighborhood;
+	}
+	
+	inline
+	const IPointVec&		
+	LatticeDescriptor::getBase() const {
+		return latBase;
+	}
+	
+	inline
+	const AutomorphismVec&	
+	LatticeDescriptor::getAutomorphisms() const {
+		return automorphisms;
+	}
+
+	inline
+	std::string
+	LatticeDescriptor::getString(const MoveSequence& moveSeq) const {
+		return (moveAlphabet==NULL)?"":moveAlphabet->getString(moveSeq);
+	}
+	
+	inline
+	MoveSequence 
+	LatticeDescriptor::getSequence(const std::string& moveString) const {
+		assertbiu(moveAlphabet != NULL,
+				  "no move alphabet available for this LatticeDescriptor");
+		return moveAlphabet->getSequence(moveString);
+	}
+
+	inline
+	bool 
+	LatticeDescriptor::areNeighbored(	const IntPoint& first, 
+										const IntPoint& second) const 
+	{
+		return getNeighborhood().isElement(second-first);
+	}
+
+} // namespace biu

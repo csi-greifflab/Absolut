@@ -1,0 +1,99 @@
+// $Id: AllowedBasePairs.icc,v 1.2 2016/08/08 12:41:58 mmann Exp $
+
+#include <algorithm>
+
+#include <iostream>
+
+namespace biu
+{
+  
+	inline
+	AllowedBasePairs
+	::AllowedBasePairs(	const Alphabet* _alph
+							, const std::string& bps
+							, const bool symmetric )
+	 :	alph(_alph)
+	 	, allowedPairs(alph->getAlphabetSize(),alph->getAlphabetSize(),false)
+	{
+		if (bps.size() != 0) {
+			std::string base1, base2;
+			const size_t elemLength = alph->getElementLength();
+			
+			size_t curSep = 0;
+			size_t nextSep = curSep;
+			do {
+				nextSep = bps.find_first_of(',',curSep);
+				  // check if exactly two alphabet elements present
+				assertbiu( (nextSep == std::string::npos)
+							? (curSep+(2*elemLength) <= bps.size())
+							: (nextSep-curSep == (2*elemLength))
+						, "at least one basepair does not consist of two alphabet elements");
+				  // get bases
+				base1 = bps.substr(curSep, elemLength);
+				base2 = bps.substr(curSep + elemLength, elemLength);
+				  // check if really bases
+				assertbiu(	(alph->isAlphabetString(base1)
+				 			&& alph->isAlphabetString(base2)), 
+				 			"The base pair "+base1+", "+base2
+				 			+" is not part of the alphabet.");
+				  // set allowed base pair
+				allowedPairs[alph->getElement(base1)][alph->getElement(base2)]=true;
+				if(symmetric) {
+					allowedPairs[alph->getElement(base2)][alph->getElement(base1)]=true;
+				}
+				  // check if end of string reached
+				if (nextSep == std::string::npos) {
+					break;
+				}
+				  // go to next base pair
+				curSep = nextSep+1;
+			}
+			while( nextSep != std::string::npos );
+		}
+	}
+	
+	
+	
+
+	inline
+	AllowedBasePairs::~AllowedBasePairs() 
+	{
+	}
+
+	inline
+	bool 
+	AllowedBasePairs::operator== (const AllowedBasePairs& abp2) const 
+	{
+		return *alph == *(abp2.alph)
+				&& allowedPairs == abp2.allowedPairs;
+	}
+
+	inline
+	bool 
+	AllowedBasePairs::operator!= (const AllowedBasePairs& abp2) const 
+	{
+		return *alph != *(abp2.alph)
+				&& allowedPairs != abp2.allowedPairs;
+	}
+
+	inline
+	bool 
+	AllowedBasePairs::allowedBasePair(const Alphabet::AlphElem& first
+					, const Alphabet::AlphElem& second) const 
+	{
+		assertbiu(first < alph->getAlphabetSize(),
+				"first alphabet element is out of the matrix boundary");
+		assertbiu(second < alph->getAlphabetSize(),
+				"second alphabet element is out of the matrix boundary");
+		
+		return allowedPairs[first][second];
+	}
+	
+	inline
+	const Alphabet* 
+	AllowedBasePairs::getAlphabet() const 
+	{ 
+		return alph; 
+	}
+
+} // namespace biu

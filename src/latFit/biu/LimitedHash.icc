@@ -1,0 +1,772 @@
+// $Id: LimitedHash.icc,v 1.2 2016/08/08 12:41:57 mmann Exp $
+
+
+
+#include "biu/assertbiu.hh"
+
+namespace biu
+{
+
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	LimitedHash(	const size_type maxSize_,
+					const size_type n ,
+					const hasher& hf,
+					const key_equal& eql,
+					const allocator_type& a)
+	 :	maxSize(maxSize_)
+	 	, maxSizeHalf( maxSize/2 )
+	 	, hashObject1( n, hf, eql, a )
+	 	, hashObject2( n, hf, eql, a )
+	 	, hash2Fill( &hashObject1 )
+	 	, hash2Check( &hashObject2 )
+	{
+		assertbiu( maxSize <= hashObject1.max_size(), "maximal size is too large");
+		assertbiu( maxSize > 1, "maxSize has to be at least 1");
+	}
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	~LimitedHash()
+	{
+	}
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	max_size( void ) const
+	{
+		return maxSize;
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	max_size( const typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type newMax )
+	{
+		assertbiu( newMax <= hashObject1.max_size(), "new maximal size is too large");
+		assertbiu( newMax > 1, "newMax has to be at least 1");
+		maxSize = newMax;
+		maxSizeHalf = maxSize/2;
+		return maxSize;
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    LimitedHash(const LimitedHash& toCopy)
+	 :	maxSize( toCopy.maxSize )
+	 	, maxSizeHalf( toCopy.maxSize )
+	 	, hashObject1( toCopy.hashObject1 )
+	 	, hashObject2( toCopy.hashObject2 )
+	 	, hash2Fill( (toCopy.hash2Fill == &toCopy.hashObject1) ? &hashObject1 : &hashObject2 )
+	 	, hash2Check( (toCopy.hash2Check == &toCopy.hashObject2) ? &hashObject2 : &hashObject1 )
+	{
+	}
+    
+    
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	LimitedHash < Key, T, Hash, Pred, Alloc >& 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    operator=(const LimitedHash< Key, T, Hash, Pred, Alloc >& toCopy)
+	{
+		  // check if the same
+		if (this == &toCopy) {
+			return *this;
+		}
+		  // copy
+		this->maxSize = toCopy.maxSize;
+		this->maxSizeHalf = toCopy.maxSizeHalf;
+		this->hashObject1 = toCopy.hashObject1;
+		this->hashObject2 = toCopy.hashObject2;
+		this->hash2Fill = (toCopy.hash2Fill == &toCopy.hashObject1) ? &hashObject1 : &hashObject2;
+		this->hash2Check = (toCopy.hash2Check == &toCopy.hashObject2) ? &hashObject2 : &hashObject1;
+		
+		 // access to changed this object
+		return *this;
+	}
+
+    /* Access to the allocator used.
+     * @return the allocator in use
+     */
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    Alloc 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    get_allocator() const
+    {
+    	return hashObject1.get_allocator();
+    }
+
+	
+    /* Whether or not an element is present or not.
+     * @return true if no element is stored in the hash, false otherwise.
+     */
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	bool
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    empty() const
+    {
+    	return hashObject1.empty() && hashObject2.empty();
+    }
+	
+	
+    /* Access to the current number of elements stored.
+     * @return the number of elements in the hash.
+     */
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    size() const
+    {
+    	return hashObject1.size() + hashObject2.size();
+    }
+	
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	begin()
+	{
+		return iterator( hash2Fill->begin(), hash2Fill->end(), hash2Check->begin(), true );
+	}
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    begin() const
+    {
+		return const_iterator( hash2Fill->begin(), hash2Fill->end(), hash2Check->begin(), true );
+    }
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator       
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    end()
+    {
+		return iterator( hash2Check->end(), hash2Fill->end(), hash2Check->begin(), false );
+    }
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    end() const
+    {
+		return const_iterator( hash2Check->end(), hash2Fill->end(), hash2Check->begin(), false );
+    }
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	std::pair<typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator, bool> 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	insert(const typename LimitedHash < Key, T, Hash, Pred, Alloc >::value_type& obj)
+	{
+		// check if already present
+		iterator check = this->find(obj.first);
+		if (check != this->end()) {
+			check->second = obj.second;
+			return std::pair<iterator,bool>( check, false );
+		}
+		
+		// else not present yet
+		
+		internal_iterator pos;
+		// check if there is room left in the current hash to fill
+		if (hash2Fill->size() < maxSizeHalf) {
+			// space left --> just insert
+			pos = hash2Fill->insert( obj ).first;
+		} else {
+			// no space left --> swap hashes
+			hash_type* tmp = hash2Fill;
+			hash2Fill = hash2Check;
+			hash2Check = tmp;
+			// clear current hash to fill
+			hash2Fill->clear();
+			// insert 
+			pos = hash2Fill->insert( obj ).first;
+		}
+		return std::pair<iterator,bool>(
+					iterator(pos, hash2Fill->end(), hash2Check->begin(), true)
+					, true);
+	}
+
+	
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    void 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    erase( typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator position)
+	{
+		  // check in what hash we have to erase
+		if (position.firstNotFound) {
+			hash2Fill->erase( position.cur );
+		} else {
+			hash2Check->erase( position.cur );
+		}
+	}
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    erase( const typename LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k)
+	{
+		// check if there is anything stored
+		iterator pos = this->find( k );
+		// remove if something found
+		if (pos != this->end() ) {
+			this->erase( pos );
+			return 1;
+		} else {
+			return 0;
+		}
+	}
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    void 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    erase(const_iterator first, const_iterator last)
+	{
+		while (first != last) {
+			this->erase(first);
+			++first;
+		}
+	}
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    void 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    clear()
+	{
+		hash2Fill->clear();
+		hash2Check->clear();
+	}
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    void 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    swap(LimitedHash< Key, T, Hash, Pred, Alloc >& toSwap )
+	{
+		std::swap( this->maxSize, toSwap.maxSize );
+		std::swap( this->maxSizeHalf, toSwap.maxSizeHalf );
+		std::swap( this->hashObject1, toSwap.hashObject1 );
+		std::swap( this->hashObject2, toSwap.hashObject2 );
+		std::swap( this->hash2Fill, toSwap.hash2Fill );
+		std::swap( this->hash2Check, toSwap.hash2Check );
+	}
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::hasher 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    hash_function() const
+    {
+		return hash2Fill.hash_function();
+    }
+	
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::key_equal 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    key_eq() const
+    {
+		return hash2Fill.key_eq();
+    }
+
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator       
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    find(const key_type& k)
+	{
+		internal_iterator pos = hash2Fill->find(k);
+		if (pos != hash2Fill->end()) {
+			return iterator(pos, hash2Fill->end(), hash2Check->begin(), true);
+		}
+		pos = hash2Check->find(k);
+		if (pos != hash2Check->end()) {
+			return iterator(pos, hash2Fill->end(), hash2Check->begin(), false);
+		}
+		
+		// otherwise not present
+		return this->end();
+	}
+	
+	
+	
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    find(const LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k) const
+	{
+		const_internal_iterator pos = hash2Fill->find(k);
+		if (pos != hash2Fill->end()) {
+			return const_iterator(pos, hash2Fill->end(), hash2Check->begin(), true);
+		}
+		pos = hash2Check->find(k);
+		if (pos != hash2Check->end()) {
+			return const_iterator(pos, hash2Fill->end(), hash2Check->begin(), false);
+		}
+		
+		// otherwise not present
+		return this->end();
+	}
+	
+
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+	typename LimitedHash < Key, T, Hash, Pred, Alloc >::size_type 
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    count(const LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k) const
+    {
+		if (this->find( k ) != this->end()) {
+			return 1;
+		} else {
+			return 0;
+		}
+    }
+
+	
+
+	///////////////////////////////////////////////////////////////////////////
+	template <	class Key,
+			    class T,
+			    class Hash,
+			    class Pred,
+			    class Alloc >
+	inline
+    std::pair<	typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator
+    			, typename LimitedHash < Key, T, Hash, Pred, Alloc >::iterator>
+	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	equal_range(const LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k)
+	{
+		iterator pos = this->find(k);
+		return std::make_pair(pos,pos);
+	}
+
+      
+  	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	inline
+    std::pair<	typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator
+    			, typename LimitedHash < Key, T, Hash, Pred, Alloc >::const_iterator>
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    equal_range(const LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k) const
+	{
+		const_iterator pos = this->find(k);
+		return std::make_pair(pos,pos);
+	}
+
+	
+  	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	inline
+    typename LimitedHash < Key, T, Hash, Pred, Alloc >::mapped_type&
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+	operator[](const LimitedHash < Key, T, Hash, Pred, Alloc >::key_type& k)
+	{
+  		iterator it = this->insert( value_type(k, T()) ).first;
+  		return (*it).second;
+	}
+
+  	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	inline
+    void
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	rehash(LimitedHash < Key, T, Hash, Pred, Alloc >::size_type n)
+  	{
+  		hash2Fill->rehash(n);
+  		hash2Check->rehash(n);
+  	}
+  	
+  	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+    template < class InputIterator >
+  	inline
+    void
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+    insert(InputIterator first, InputIterator last)
+    {
+  		while (first != last) {
+  			this->insert(*first);
+  			++first;
+  		}
+    }
+
+
+  	///////////////////////////////////////////////////////////////////////////
+  	///////////////////////////////////////////////////////////////////////////
+  	///////////////////////////////////////////////////////////////////////////
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+	iteratorT(	iterator_type cur_
+				, iterator_type firstEnd_
+				, iterator_type secondStart_
+				, bool firstNotEnded_ )
+	 :	cur( cur_ )
+	 	, firstEnd( firstEnd_ )
+	 	, secondStart( secondStart_ )
+	 	, firstNotEnded( firstNotEnded_ )
+ 	{
+		 // check if first interval is empty
+		if (firstNotEnded && cur == firstEnd) {
+			firstNotEnded = false;
+			cur = secondStart;
+		}
+ 	}
+	
+	
+	
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+	iteratorT()
+	 :	cur()
+	 	, firstEnd()
+	 	, secondStart()
+	 	, firstNotEnded(false)
+	{ }
+	
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+	~iteratorT()
+	{ }
+	
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+	iteratorT(const iteratorT< iterator_type >& toCopy) 
+	 :	cur( toCopy.cur )
+		, firstEnd( toCopy.firstEnd )
+		, secondStart( toCopy.secondStart )
+		, firstNotEnded( toCopy.firstNotEnded )
+	{ }
+	
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+	typename iterator_type::reference
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator*() const
+    { 
+		return (*cur); 
+	}
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+    typename iterator_type::pointer
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator->() const
+    { 
+		return cur.operator->(); 
+	}
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >&
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator++()
+    {
+	  	++cur;
+	  	if (firstNotEnded && cur == firstEnd) {
+	  		firstNotEnded = false;
+	  		cur = secondStart;
+	  	}
+	  	return *this;
+    }
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator++(int)
+    { 
+    	iteratorT<iterator_type> retIt(cur, firstEnd, secondStart, firstNotEnded);
+    	++cur;
+	  	if (firstNotEnded && cur == firstEnd) {
+	  		firstNotEnded = false;
+	  		cur = secondStart;
+	  	}
+    	return retIt;
+    }
+
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+    bool
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator==( const 
+				  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+				  	iteratorT< iterator_type >& toCompare )
+    {
+    	return	cur == toCompare.cur
+    			&& (firstNotEnded == toCompare.firstNotEnded)
+    			&& firstEnd == toCompare.firstEnd
+    			&& secondStart == toCompare.secondStart
+    			;
+    }
+	
+  	
+ 	///////////////////////////////////////////////////////////////////////////
+  	template <	class Key,
+  			    class T,
+  			    class Hash,
+  			    class Pred,
+  			    class Alloc >
+  	template < class iterator_type >
+  	inline
+    bool
+  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+  	iteratorT< iterator_type >::
+    operator!=( const 
+				  	LimitedHash < Key, T, Hash, Pred, Alloc >::
+				  	iteratorT< iterator_type >& toCompare )
+    {
+    	return	!this->operator==(toCompare);
+    }
+
+  	
+} // namespace biu

@@ -1,0 +1,819 @@
+// $Id: MatrixSparse.icc,v 1.2 2016/08/08 12:41:58 mmann Exp $
+
+
+#include "biu/assertbiu.hh"
+
+
+namespace biu {
+
+	template <class T> inline
+	MatrixSparseR<T>::MatrixSparseR(const T &val)
+	  :	rows(0), cols(0), defaultVal(val)
+	{
+	}
+
+	template <class T> inline
+	MatrixSparseR<T>::MatrixSparseR(const size_t r, const size_t c, const T &val)
+	  :	rows(r), cols(c), defaultVal(val)
+	{
+
+	}
+
+	template <class T> inline
+	MatrixSparseR<T>::MatrixSparseR(const MatrixSparseR<T> &m)
+	  :	rows(m.numRows()), cols(m.numColumns()), defaultVal(m.defaultVal)
+	{
+		
+		typename RowMap::iterator row;
+		typename RowMap::const_iterator rM;
+		typename EntryMap::const_iterator col;
+
+		  // copy data from m
+		for (rM = m.row2col2entry.begin(); rM != row2col2entry.end(); rM++) {
+			  // create new row data
+			row = row2col2entry.insert(typename RowMap::value_type(rM->first,EntryMap())).first;
+			  // copy row data
+			for (col = rM->second.begin(); col != rM->second.end(); col++) {
+				row->second.insert(*col);
+			}
+		}
+	}
+
+	template <class T> inline
+	MatrixSparseR<T> & MatrixSparseR<T>::operator =(const MatrixSparseR<T> &m)
+	{
+		if (this != &m)
+		{
+			rows = m.rows;
+			cols = m.cols;
+			defaultVal = m.defaultVal;
+			
+			typename RowMap::iterator row;
+			typename RowMap::const_iterator rM;
+			typename EntryMap::const_iterator col;
+
+			  // clear old data
+			row2col2entry.clear();
+			  // copy data from m
+			for (rM = m.row2col2entry.begin(); rM != row2col2entry.end(); rM++) {
+				  // create new row data
+				row = row2col2entry.insert(typename RowMap::value_type(rM->first,EntryMap())).first;
+				  // copy row data
+				for (col = rM->second.begin(); col != rM->second.end(); col++) {
+					row->second.insert(*col);
+				}
+			}
+		}
+		return *this;
+	}
+	
+	template<class T> inline
+	T 
+	MatrixSparseR<T>::atConst(const size_t r, const size_t c) const
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename RowMap::const_iterator row;
+		typename EntryMap::const_iterator col;
+
+		  // check if row data available
+		row = row2col2entry.find(r);
+		if (row == row2col2entry.end()) {
+			return defaultVal;
+		}
+		  // check if column entry in current row data available
+		col = row->second.find(c);
+		if (col == row->second.end()) {
+			return defaultVal;
+		}
+		  // non-empty entry
+		return col->second;
+	}
+	
+	template<class T> inline
+	T 
+	MatrixSparseR<T>::at(const size_t r, const size_t c) const
+	{
+		return atConst(r,c);
+	}
+	
+	template<class T> inline
+	T&
+	MatrixSparseR<T>::at(const size_t r, const size_t c)
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename RowMap::iterator row;
+		typename EntryMap::iterator col;
+
+		row = row2col2entry.find(r);
+		if (row == row2col2entry.end()) {
+			  // create non-existing row and column entry
+			row = row2col2entry.insert(typename RowMap::value_type(r, EntryMap())).first;
+			col = row->second.insert(typename EntryMap::value_type(c, defaultVal)).first;
+		} else {
+			col = row->second.find(c);
+			  // create non-existing column entry
+			if (col == row->second.end()) {
+				col = row->second.insert(typename EntryMap::value_type(c, defaultVal)).first;
+			}
+		}
+		  // access to the existing or inserted element
+		return col->second;
+	}
+
+	template<class T> inline
+	bool
+	MatrixSparseR<T>::exists(const size_t r, const size_t c) const
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename RowMap::const_iterator row;
+		typename EntryMap::const_iterator col;
+
+		row = row2col2entry.find(r);
+		if (row != row2col2entry.end()) {
+			col = row->second.find(c);
+			if (col != row->second.end()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	template <class T> inline
+	size_t 
+	MatrixSparseR<T>::numRows() const
+	{
+		return rows;
+	}
+
+	template <class T> inline
+	size_t MatrixSparseR<T>::numColumns() const
+	{
+		return cols;
+	}
+
+
+	
+	template <class T> inline
+	std::vector<T> MatrixSparseR<T>::operator *(const std::vector<T> &vec) const
+	{
+		assertbiu(vec.size() == cols, "given column vector length differs column number");
+		assertbiu(cols > 0, "matrix has no columns");
+		
+		std::vector<T> res(rows);
+		
+		for (size_t r=0; r<rows; r++) {
+			  // multiply with first column
+			res[r] = atConst(r,0) * vec.at(0);
+			  // add remaining values
+			for (size_t c=1; c<cols; c++) {
+				res[r] += atConst(r,0) * vec.at(0);
+			}
+		}
+
+		
+//		typename RowMap::iterator row;
+//		typename EntryMap::iterator col;
+//
+//		  // multiply all non-empty entries
+//		for (row = row2col2entry.begin(); row != row2col2entry.end(); row++) {
+//			  // multiply with first column
+//			col = row->second.find(0);
+//			if (col != row->second.end()) {
+//				res[0] = col->second * vec.at(0);
+//			} else {
+//				res[0] = defaultVal * vec.at(0);
+//			}
+//			  // add remaining values
+//			for (size_t c=1; c<cols; c++ ) {
+//				col = row->second.find(c);
+//				if (col != row->second.end()) {
+//					res[c] += col->second * vec.at(c);
+//				} else {
+//					res[c] += defaultVal * vec.at(c);
+//				}
+//			}
+//		}
+		  // final multiplication product
+		return res;
+	}
+
+
+	template <class T> inline
+	bool MatrixSparseR<T>::operator ==(const MatrixSparseR<T> &mat) const
+	{
+		  // compare dimensions
+		if ( rows != mat.rows || cols != mat.cols )
+			return false;
+		  // comparison of all elements
+		typename RowMap::const_iterator r1, r2;
+		typename EntryMap::const_iterator c1, c2;
+		
+		  // check if same default values in case of empty elements
+		if (row2col2entry.size() < rows && defaultVal != mat.defaultVal) {
+			return false;
+		}
+		  // compare non-empty elements
+		for (r1 = row2col2entry.begin(); r1 != row2col2entry.end(); r1++)
+		for (r2 = mat.row2col2entry.begin(); r2 != mat.row2col2entry.end(); r2++)
+		{
+			  // check if same default values in case of empty elements
+			if (r1->second.size() < cols && defaultVal != mat.defaultVal) {
+				return false;
+			}
+			  // check if same row
+			if ( r1->first != r2->first ) 
+				return false;
+			  // check for all non-empty column entries
+			for (c1 = r1->second.begin(); c1 != r1->second.end(); c1++)
+			for (c2 = r2->second.begin(); c2 != r2->second.end(); c2++) {
+				  // check if same column and same entry
+				if (c1->first != c2->first || c1->second != c2->second)
+					return false;
+			}
+		}
+		
+		  // all non-empty entries are equal
+		return true;
+	}
+
+	template <class T> inline
+	bool MatrixSparseR<T>::operator !=(const MatrixSparseR<T> &mat) const
+	{
+		return !(operator==(mat));
+	}
+
+	template <class T> inline
+	void MatrixSparseR<T>::resize(const size_t r, const size_t c)
+	{
+		  // check if only resizing (nothing to do)
+		if (r >= rows && c >= cols) {
+			rows = r;
+			cols = c;
+			return;
+		}
+		
+		typename RowMap::iterator row;
+		typename EntryMap::iterator col;
+		
+		  // erase obsolete rows
+		if (r < rows) {
+			for (size_t i = r; i<rows; i++) {
+				row = row2col2entry.find(i);
+				if (row != row2col2entry.end()) {
+					row2col2entry.erase(row);
+				}
+			}
+		}
+		  // erase obsolete column entries
+		if (c < cols) {
+			for (row = row2col2entry.begin(); row != row2col2entry.end(); row++) {
+				for (size_t i=c; i<cols; i++) {
+					col = row->second.find(i);
+					if (col != row->second.end()) {
+						row->second.erase(col);
+					}
+				}
+			}
+		}
+		
+		rows = r;
+		cols = c;
+	}
+
+	template <class T> inline
+	void MatrixSparseR<T>::resize(const size_t r, const size_t c, const T& defVal)
+	{
+		  // set default value
+		defaultVal = defVal;
+		  // forward resizing
+		resize(r,c);
+	}
+	
+	template <class T> inline
+	MatrixSparseR<T>::~MatrixSparseR()
+	{
+		row2col2entry.clear();
+	}
+
+	template <class T> inline
+	std::vector<T> 
+	MatrixSparseR<T>::rowVec(const size_t r) const {
+		  // fill return value with default values
+		std::vector<T> res(cols,defaultVal);
+		typename RowMap::const_iterator row;
+		typename EntryMap::const_iterator col;
+		  // add all non-empty elements
+		row = row2col2entry.find(r);
+		if (row != row2col2entry.end()) {
+			for (col = row->second.begin(); col != row->second.end(); col++) {
+				res[col->first] = col->second;
+			}
+		}
+		  // final column vector
+		return res;
+	}
+
+	template <class T> inline
+	std::vector<T> 
+	MatrixSparseR<T>::columnVec(const size_t c) const {
+		  // fill return value with default values
+		std::vector<T> res(rows,defaultVal);
+		typename RowMap::const_iterator row;
+		typename EntryMap::const_iterator col;
+		  // add all non-empty elements
+		for (row = row2col2entry.begin(); row!=row2col2entry.end(); row++) {
+			col = row->second.find(c);
+			if (col != row->second.end())
+				res[row->first] = col->second;
+		}
+		  // final column vector
+		return res;
+	}
+	
+	template <class T> inline
+	typename MatrixSparseR<T>::EntryMap 
+	MatrixSparseR<T>::rowValues(const size_t r) const {
+		typename RowMap::const_iterator row;
+		row = row2col2entry.find(r);
+		  // check if there is data for row r available
+		if (row != row2col2entry.end()) {
+			return row->second;
+		}
+		  // no entries in this row
+		return EntryMap();
+	}
+	
+	template <class T> inline
+	typename MatrixSparseR<T>::EntryMap 
+	MatrixSparseR<T>::columnValues(const size_t c) const {
+		typename RowMap::const_iterator row;
+		typename EntryMap::const_iterator col;
+
+		EntryMap m;
+		  // find all non-empty row entries in column c
+		for (size_t r=0; r<rows; r++) {
+			  // check if data is available in current row
+			row = row2col2entry.find(r);
+			if (row != row2col2entry.end()) {
+				  // check if column is non-empty in current row
+				col = row->second.find(c);
+				if (col != row->second.end()) {
+					  // add to storage
+					m.insert(typename EntryMap::value_type(r, col->second));
+				}
+			}
+		}
+		  // set of non-empty rows in column c
+		return m;
+	}
+
+	
+	template <class T> inline
+	void 
+	MatrixSparseR<T>::setDefaultValue( const T& defVal ) {
+		defaultVal = defVal;
+	}
+
+	template <class T> inline
+	const T&
+	MatrixSparseR<T>::getDefaultValue( void ) const {
+		return defaultVal;
+	}
+
+} // namespace biu
+
+	
+
+namespace biu {
+
+	template <class T> inline
+	MatrixSparseC<T>::MatrixSparseC(const T &val)
+	  :	rows(0), cols(0), defaultVal(val)
+	{
+	}
+
+	template <class T> inline
+	MatrixSparseC<T>::MatrixSparseC(const size_t r, const size_t c, const T &val)
+	  :	rows(r), cols(c), defaultVal(val)
+	{
+
+	}
+
+	template <class T> inline
+	MatrixSparseC<T>::MatrixSparseC(const MatrixSparseC<T> &m)
+	  :	rows(m.numRows()), cols(m.numColumns()), defaultVal(m.defaultVal)
+	{
+		
+		typename ColMap::iterator col;
+		typename ColMap::const_iterator cM;
+		typename EntryMap::const_iterator row;
+
+		  // copy data from m
+		for (cM = m.col2row2entry.begin(); cM != col2row2entry.end(); cM++) {
+			  // create new column data
+			col = col2row2entry.insert(typename ColMap::value_type(cM->first,EntryMap())).first;
+			  // copy column data
+			for (row = cM->second.begin(); row != cM->second.end(); row++) {
+				col->second.insert(*row);
+			}
+		}
+	}
+
+	template <class T> inline
+	MatrixSparseC<T> & MatrixSparseC<T>::operator =(const MatrixSparseC<T> &m)
+	{
+		if (this != &m)
+		{
+			rows = m.rows;
+			cols = m.cols;
+			defaultVal = m.defaultVal;
+			
+			typename ColMap::iterator col;
+			typename ColMap::const_iterator cM;
+			typename EntryMap::const_iterator row;
+
+			  // clear old data
+			col2row2entry.clear();
+			  // copy data from m
+			for (cM = m.col2row2entry.begin(); cM != col2row2entry.end(); cM++) {
+				  // create new column data
+				col = col2row2entry.insert(typename ColMap::value_type(cM->first,EntryMap())).first;
+				  // copy column data
+				for (row = cM->second.begin(); row != cM->second.end(); row++) {
+					col->second.insert(*row);
+				}
+			}
+		}
+		return *this;
+	}
+	
+	template<class T> inline
+	T 
+	MatrixSparseC<T>::atConst(const size_t r, const size_t c) const
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename ColMap::const_iterator col;
+		typename EntryMap::const_iterator row;
+
+		  // check if column data available
+		col = col2row2entry.find(c);
+		if (col == col2row2entry.end()) {
+			return defaultVal;
+		}
+		  // check if row entry in current column data available
+		row = col->second.find(r);
+		if (row == col->second.end()) {
+			return defaultVal;
+		}
+		  // constant access non-empty entry
+		return row->second;
+	}
+	
+	template<class T> inline
+	T 
+	MatrixSparseC<T>::at(const size_t r, const size_t c) const
+	{
+		  // constant access
+		return atConst(r,c);
+	}
+	
+	template<class T> inline
+	T&
+	MatrixSparseC<T>::at(const size_t r, const size_t c)
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename ColMap::iterator col;
+		typename EntryMap::iterator row;
+
+		col = col2row2entry.find(c);
+		if (col == col2row2entry.end()) {
+			  // create non-existing row and column entry
+			col = col2row2entry.insert(typename ColMap::value_type(c, EntryMap())).first;
+			row = col->second.insert(typename EntryMap::value_type(r, defaultVal)).first;
+		} else {
+			row = col->second.find(r);
+			  // create non-existing row entry
+			if (row == col->second.end()) {
+				row = col->second.insert(typename EntryMap::value_type(r, defaultVal)).first;
+			}
+		}
+		  // access to the existing or inserted element
+		return row->second;
+	}
+
+	template<class T> inline
+	bool
+	MatrixSparseC<T>::exists(const size_t r, const size_t c) const
+	{
+		assertbiu(r<rows, "requested row index is out of range");
+		assertbiu(c<cols, "requested column index is out of range");
+		
+		typename ColMap::const_iterator col;
+		typename EntryMap::const_iterator row;
+
+		col = col2row2entry.find(c);
+		if (col != col2row2entry.end()) {
+			row = col->second.find(r);
+			if (row != col->second.end()) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	template <class T> inline
+	size_t 
+	MatrixSparseC<T>::numRows() const
+	{
+		return rows;
+	}
+
+	template <class T> inline
+	size_t MatrixSparseC<T>::numColumns() const
+	{
+		return cols;
+	}
+
+
+	
+	template <class T> inline
+	std::vector<T> MatrixSparseC<T>::operator *(const std::vector<T> &vec) const
+	{
+		assertbiu(vec.size() == cols, "given column vector length differs column number");
+		assertbiu(cols > 0, "matrix has no columns");
+		
+		std::vector<T> res(rows);
+		
+		for (size_t r=0; r<rows; r++) {
+			  // multiply with first column
+			res[r] = atConst(r,0) * vec.at(0);
+			  // add remaining values
+			for (size_t c=1; c<cols; c++) {
+				res[r] += atConst(r,0) * vec.at(0);
+			}
+		}
+		  // final multiplication product
+		return res;
+	}
+
+
+	template <class T> inline
+	bool MatrixSparseC<T>::operator ==(const MatrixSparseC<T> &mat) const
+	{
+		  // compare dimensions
+		if ( rows != mat.rows || cols != mat.cols )
+			return false;
+		  // comparison of all elements
+		typename ColMap::const_iterator c1, c2;
+		typename EntryMap::const_iterator r1, r2;
+		
+		  // check if same default values in case of empty elements
+		if (col2row2entry.size() < rows && defaultVal != mat.defaultVal) {
+			return false;
+		}
+		  // compare non-empty elements
+		for (c1 = col2row2entry.begin(); c1 != col2row2entry.end(); c1++)
+		for (c2 = mat.col2row2entry.begin(); c2 != mat.col2row2entry.end(); c2++)
+		{
+			  // check if same default values in case of empty elements
+			if (c1->second.size() < rows && defaultVal != mat.defaultVal) {
+				return false;
+			}
+			  // check if same row
+			if ( c1->first != c2->first ) 
+				return false;
+			  // check for all non-empty column entries
+			for (r1 = c1->second.begin(); r1 != c1->second.end(); r1++)
+			for (r2 = c2->second.begin(); r2 != c2->second.end(); r2++) {
+				  // check if same column and same entry
+				if (r1->first != r2->first || r1->second != r2->second)
+					return false;
+			}
+		}
+		
+		  // all non-empty entries are equal
+		return true;
+	}
+
+	template <class T> inline
+	bool MatrixSparseC<T>::operator !=(const MatrixSparseC<T> &mat) const
+	{
+		return !(operator==(mat));
+	}
+
+	template <class T> inline
+	void MatrixSparseC<T>::resize(const size_t r, const size_t c)
+	{
+		  // check if only resizing (nothing to do)
+		if (r >= rows && c >= cols) {
+			rows = r;
+			cols = c;
+			return;
+		}
+		
+		typename ColMap::iterator col;
+		typename EntryMap::iterator row;
+		
+		  // erase obsolete columns
+		if (c < cols) {
+			for (size_t i = c; i<cols; i++) {
+				col = col2row2entry.find(i);
+				if (col != col2row2entry.end()) {
+					col2row2entry.erase(col);
+				}
+			}
+		}
+		  // erase obsolete row entries
+		if (r < rows) {
+			for (col = col2row2entry.begin(); col != col2row2entry.end(); col++) {
+				for (size_t i=r; i<rows; i++) {
+					row = col->second.find(i);
+					if (row != col->second.end()) {
+						col->second.erase(row);
+					}
+				}
+			}
+		}
+		
+		rows = r;
+		cols = c;
+	}
+
+	template <class T> inline
+	void MatrixSparseC<T>::resize(const size_t r, const size_t c, const T& defVal)
+	{
+		  // set default value
+		defaultVal = defVal;
+		  // forward resizing
+		resize(r,c);
+	}
+	
+	template <class T> inline
+	MatrixSparseC<T>::~MatrixSparseC()
+	{
+		col2row2entry.clear();
+	}
+
+	template <class T> inline
+	std::vector<T> 
+	MatrixSparseC<T>::rowVec(const size_t r) const {
+		  // fill return value with default values
+		std::vector<T> res(cols,defaultVal);
+		typename ColMap::const_iterator col;
+		typename EntryMap::const_iterator row;
+		  // add all non-empty elements
+		for (col = col2row2entry.begin(); col!=col2row2entry.end(); col++) {
+			row = col->second.find(r);
+			if (row != col->second.end())
+				res[col->first] = row->second;
+		}
+		  // final column vector
+		return res;
+	}
+
+	template <class T> inline
+	std::vector<T> 
+	MatrixSparseC<T>::columnVec(const size_t c) const {
+		  // fill return value with default values
+		std::vector<T> res(rows,defaultVal);
+		typename ColMap::const_iterator col;
+		typename EntryMap::const_iterator row;
+		  // add all non-empty elements
+		col = col2row2entry.find(c);
+		if (col != col2row2entry.end()) {
+			for (row = col->second.begin(); row != col->second.end(); row++) {
+				res[row->first] = row->second;
+			}
+		}
+		  // final column vector
+		return res;
+	}
+	
+	template <class T> inline
+	typename MatrixSparseC<T>::EntryMap 
+	MatrixSparseC<T>::rowValues(const size_t r) const {
+		typename ColMap::const_iterator col;
+		typename EntryMap::const_iterator row;
+
+		EntryMap m;
+		  // find all non-empty row entries in column c
+		for (size_t c=0; c<cols; c++) {
+			  // check if data is available in current row
+			col = col2row2entry.find(c);
+			if (col != col2row2entry.end()) {
+				  // check if column is non-empty in current row
+				row = col->second.find(r);
+				if (row != col->second.end()) {
+					  // add to storage
+					m.insert(typename EntryMap::value_type(c, row->second));
+				}
+			}
+		}
+		  // set of non-empty rows in column c
+		return m;
+	}
+	
+	template <class T> inline
+	typename MatrixSparseC<T>::EntryMap 
+	MatrixSparseC<T>::columnValues(const size_t c) const {
+		typename ColMap::const_iterator col;
+		col = col2row2entry.find(c);
+		  // check if there is data for row r available
+		if (col != col2row2entry.end()) {
+			return col->second;
+		}
+		  // no entries in this row
+		return EntryMap();
+	}
+
+	
+	template <class T> inline
+	void 
+	MatrixSparseC<T>::setDefaultValue( const T& defVal ) {
+		defaultVal = defVal;
+	}
+
+	template <class T> inline
+	const T&
+	MatrixSparseC<T>::getDefaultValue( void ) const {
+		return defaultVal;
+	}
+
+} // namespace biu
+
+	
+template <class T> inline
+std::ostream&
+operator << (std::ostream& out, const biu::MatrixSparseR<T> & m)	
+{
+	typename biu::MatrixSparseR<T>::EntryMap row;
+	typename biu::MatrixSparseR<T>::EntryMap::const_iterator col;
+	for (size_t r = 0; r < m.numRows(); r++)
+	{
+		row = m.rowValues(r);
+		if ( row.size() == 0 ) {
+			  // print default values only
+			for (size_t c=0; c<m.numColumns(); c++) {
+				out <<m.getDefaultValue() <<' ';
+			}
+		} else {
+			  // write non-empty elements
+			for (size_t c = 0; c < m.numColumns(); c++)
+			{
+				col = row.find(c);
+				if ( col == row.end() ) {
+					out <<m.getDefaultValue();
+				} else {
+					out <<(col->second);
+				}
+				out << ' ';
+			}
+		}
+		out << "\n";
+	}
+	return out;
+}
+	
+template <class T> inline
+std::ostream&
+operator << (std::ostream& out, const biu::MatrixSparseC<T> & m)	
+{
+	typename biu::MatrixSparseC<T>::EntryMap row;
+	typename biu::MatrixSparseC<T>::EntryMap::const_iterator col;
+	for (size_t r = 0; r < m.numRows(); r++)
+	{
+		row = m.rowValues(r);
+		if ( row.size() == 0 ) {
+			  // print default values only
+			for (size_t c=0; c<m.numColumns(); c++) {
+				out <<m.getDefaultValue() <<' ';
+			}
+		} else {
+			  // write non-empty elements
+			for (size_t c = 0; c < m.numColumns(); c++)
+			{
+				col = row.find(c);
+				if ( col == row.end() ) {
+					out <<m.getDefaultValue();
+				} else {
+					out <<(col->second);
+				}
+				out << ' ';
+			}
+		}
+		out << "\n";
+	}
+	return out;
+}

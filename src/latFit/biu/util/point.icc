@@ -1,0 +1,75 @@
+
+	std::ostream& 
+	operator<< (std::ostream &out, const biu::IPointSet& s) {
+		out <<"{ ";
+		for (biu::IPointSet::const_iterator it=s.begin(); it!=s.end();it++) {
+			out <<" (" <<*it <<"),";
+		}
+		out <<"\b }";
+		return out;
+	}
+
+	std::ostream& 
+	operator<< (std::ostream &out, const biu::IPointVec& s) {
+		out <<"[ ";
+		for (biu::IPointVec::const_iterator it=s.begin(); it!=s.end();it++) {
+			out <<" (" <<*it <<"),";
+		}
+		out <<"\b ]";
+		return out;
+	}
+
+	std::ostream& 
+	operator<< (std::ostream &out, const biu::DPointSet& s) {
+		out <<"{ ";
+		for (biu::DPointSet::const_iterator it=s.begin(); it!=s.end();it++) {
+			out <<" (" <<*it <<"),";
+		}
+		out <<"\b }";
+		return out;
+	}
+
+	std::ostream& 
+	operator<< (std::ostream &out, const biu::DPointVec& s) {
+		out <<"[ ";
+		for (biu::DPointVec::const_iterator it=s.begin(); it!=s.end();it++) {
+			out <<" (" <<*it <<"),";
+		}
+		out <<"\b ]";
+		return out;
+	}
+
+
+namespace biu {
+	
+	
+	
+	template<class T>
+	bool
+	isSubset(const std::set< Point3D<T> > &s, const std::set< Point3D<T> > &sub) {
+		if (s.size() < sub.size()) // sub has to be smaller
+			return false;
+		if (s.size() == 0)	// is true for empty sets
+			return true;
+		
+		Point3D<T> shift;
+		
+		typename std::set< Point3D<T> >::size_type maxTests = s.size()-sub.size()+1;
+		typename std::set< Point3D<T> >::const_iterator sIt = s.begin(), pIt = sub.begin();
+		for (;maxTests>0; maxTests--) {
+			pIt = sub.begin();
+			shift = *sIt - *pIt;
+			for (pIt++; pIt != sub.end(); pIt++) {
+				if (  s.find(*pIt + shift) == s.end() )
+					break;
+			}
+			if (pIt == sub.end())
+				return true;
+			sIt++;
+		}
+			
+		return false;
+	}
+	
+	
+} // namespace biu

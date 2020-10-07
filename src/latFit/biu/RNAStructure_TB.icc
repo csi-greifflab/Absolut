@@ -1,0 +1,234 @@
+// $Id: RNAStructure_TB.icc,v 1.2 2016/08/08 12:41:57 mmann Exp $
+
+
+#include <biu/assertbiu.hh>
+
+namespace biu
+{
+
+
+	////////////////////////////////////////////////////////////////////////////
+
+	inline 
+	Sequence 
+	RNAStructure_TB
+	::getSequence() const {
+		assertbiu(rnaSeq != NULL, "no sequence available");
+		return *rnaSeq;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	Structure 
+	RNAStructure_TB
+	::getStructure() const {
+	
+		assertbiu(bracketStructStr.size()!=0,"structure String bracketStructStr is of lenght 0");
+		return Structure(STRUCT_ALPH.getSequence(bracketStructStr));
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	size_t	
+	RNAStructure_TB
+	::getLength() const {
+		assertbiu(rnaSeq != NULL, "no sequence available");
+		return rnaSeq->size();
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	bool 
+	RNAStructure_TB
+	::isValid() const{
+		//This assertion might cause troubles in debuging, as it might change the status to be calculated
+		assertbiu((validTreeStruc!=NULL)
+				||!RNAStructure_TB::hasValidStructure()
+		||!RNAStructure_TB::hasValidBasePairs()
+		||!RNAStructure_TB::hasValidLoopSize(),"invalid RNA, but all three validity checks are ture!!");
+	
+		return validTreeStruc!=NULL;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	std::string 
+	RNAStructure_TB
+	::getStringRepresentation() const {
+		return	getStructureString() 
+				+ std::string("(") 
+				+ getSequenceString() 
+				+ std::string(")") ;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	inline 
+	const size_t 
+	RNAStructure_TB
+	::getMinLoopLength() {
+		return MIN_LOOP_LENGTH; 
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	const Alphabet* 
+	RNAStructure_TB
+	::getStructureAlphabet() {
+		return &STRUCT_ALPH;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	inline 
+	std::string 
+	RNAStructure_TB
+	::getSequenceString() const {
+		assertbiu(bPair!=NULL,"bPair should not be NULL");
+		return bPair->getAlphabet()->getString(*rnaSeq);
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	std::string 
+	RNAStructure_TB
+	::getStructureString() const {
+		assertbiu(bracketStructStr.size()!=0,"Structure string is an empty string");
+		return bracketStructStr;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	const std::string&  
+	RNAStructure_TB
+	::getStructureStringRef() const {
+		assertbiu(bracketStructStr.size()!=0,"Structure string is an empty string");
+		return bracketStructStr;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	bool 
+	RNAStructure_TB
+	::isValidDeleteMove(const size_t i, const size_t j) const{
+		assertbiu(i<validTreeStruc->size(),"i index should be smaller than the structure size");
+		assertbiu(j<validTreeStruc->size(),"j index should be smaller than the structure size");
+	
+		return 	(*validTreeStruc)[i].pair == j;  		//Paired
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	inline 
+	size_t 
+	RNAStructure_TB
+	::getCorrespondingBase(size_t basePos) const {
+		assertbiu(basePos<validTreeStruc->size(),"basePos index should be smaller than the structure size");
+		return (*validTreeStruc)[basePos].pair;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	inline 
+	bool 
+	RNAStructure_TB
+	::isAllowedBasePair(size_t pos1, size_t pos2) const
+	{
+	
+		assertbiu(pos1 < rnaSeq->size(),
+				"first position is not a base position in the RNA sequence.");
+		assertbiu(pos2 < rnaSeq->size(),
+				"second position is not a base position in the RNA sequence.");
+		return bPair->allowedBasePair( rnaSeq->at(pos1), rnaSeq->at(pos2) );
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	
+	inline 
+	double 
+	RNAStructure_TB
+	::getEnergy() const 
+	{
+		assertbiu(false, "!!! NOT IMPLEMENTED !!! DONT USE THIS FUNCTION !!!");
+		return 0.0;
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	bool 
+	RNAStructure_TB
+	::areOnSameLevel(const size_t i, const size_t j) const{
+		assertbiu(i<validTreeStruc->size(),"i index should be smaller than the structure size");
+		assertbiu(j<validTreeStruc->size(),"j index should be smaller than the structure size");
+	
+		// Make sure to have them in the correct order
+		size_t ii, jj;
+		if (i > j) {
+			ii = j; jj = i;			
+		}else{
+			ii = i; jj = j;
+		}
+	
+		size_t k = ii;
+		size_t l;
+		// As long as the next is greater, we aren't back to the beginning
+		while((l=(*validTreeStruc)[k].next)>k){
+			// We are past jj, and not possible to find it since the order is maintained
+			if (l >= jj) break;		
+			k=l;
+		}
+		return (l == jj);
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	
+	
+	inline 
+	void 
+	RNAStructure_TB
+	::setStringBrackets(const size_t i, const size_t j){
+		assertbiu(i<validTreeStruc->size(),"i index should be smaller than the structure size");
+		assertbiu(j<validTreeStruc->size(),"j index should be smaller than the structure size");
+	
+		if (i < j){
+			bracketStructStr[i]='(';
+			bracketStructStr[j]=')';
+		}else{
+			bracketStructStr[j]='(';
+			bracketStructStr[i]=')';	
+		}
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+
+
+} // namespace biu
+

@@ -1,0 +1,20 @@
+// $Id: LatticeMoveSet.icc,v 1.2 2016/08/08 12:41:58 mmann Exp $
+
+#include <biu/LatticeMoveSet.hh>
+
+namespace biu
+{
+
+	inline
+	LatticeMoveSet::LatticeMoveSet(const LatticeModel* _lattice) :
+		lattice(_lattice)
+	{
+		assertbiu(lattice != NULL, "no lattice model available");
+	}
+	
+	inline
+	LatticeMoveSet::~LatticeMoveSet()
+	{
+	}
+
+} // namespace biu

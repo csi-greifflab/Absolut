@@ -1,0 +1,377 @@
+\documentclass{article}
+
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+\usepackage{algorithm}
+\usepackage{algpseudocode}  % pseudocode (aus algorithmixs)
+\usepackage{graphicx}
+\usepackage{amsmath}
+
+
+\newcommand{\latfold}{\textsc{LatFold}}
+
+\newsavebox{\savepar}
+\newenvironment{boxit}{\begin{lrbox}{\savepar}\begin{minipage}[t]{0.8\textwidth}}
+                      {\end{minipage}\end{lrbox}\fbox{\usebox{\savepar}}}
+
+\title{\latfold{} - Manual}
+
+\date{}
+
+\author{Martin Mann - University Freiburg \\\\
+{http://www.bioinf.uni-freiburg.de/}}
+
+\begin{document}
+
+\maketitle
+
+\input{version-info}
+
+\section{Description}
+
+\latfold{} implements a Monte-Carlo simulation utilizing a Metropolis criterion
+(see \cite{Mann:latpack:HFSP08}). The implementation is based on the Energy
+Landscape Library \cite{Mann:ELL:BIRD07}. It supports:
+
+\begin{enumerate}
+  \item various lattices (see Sec.~\ref{sec:lat})
+  \item arbitrary energy functions (see Sec.~\ref{sec:energy})
+  \item different move sets (see Sec.~\ref{sec:lat-params})
+  \item \ldots
+\end{enumerate}
+
+\section{Method}
+\label{sec:method}
+
+
+\subsection{Global Folding Simulation}
+\label{sec:MC}
+
+\subsubsection*{Given:}
+
+\begin{tabular}{rcl}
+	$S=S_1,\ldots,S_n$ &:& monomer sequence from alphabet $A$ to fold \\
+	$E(S,P)$ &:& energy function (see Sec.~\ref{sec:energy})\\
+	$N(L)$ &:& set of neighboring structures of $L$ in the energy landscape \\
+	$t_{max}$	&:& a maximal simulation time
+\end{tabular}
+
+\subsubsection*{Result:}
+
+\begin{tabular}{rcl}
+	$L=L_1,\ldots,L_n$	&:& 3D coordinates of the final \\
+						&& placement of $S$ in the lattice
+\end{tabular}
+
+\subsubsection*{Method:}
+
+
+\vspace{0.5em}
+\begin{algorithm}[H]
+\caption{\latfold{} core algorithm}
+\begin{algorithmic}[1]
+\tiny
+	\State $L=L_1,\ldots,L_n$ \Comment{the currently adopted structure}
+	\Statex \Comment{initialized with the open chain $L_i = (i,0,0)$}
+	\While{simulation end $t_{max}$ not reached}
+		\State Select random neighbor $N_r \in N(L)$
+		\State $r \in [0,1]$ \Comment{get random number in interval $[0,1]$}
+		\If{($r \leq e^{-\frac{E(S,N_r)-E(S,L)}{kT}}$)}
+			\State $L \gets N_r$ \Comment{go to neighboring structure}
+		\Else \Comment{keep current structure for this step}
+		\EndIf
+	\EndWhile
+	\State report final structure $L$
+\end{algorithmic}
+\end{algorithm}
+
+
+
+
+
+\section{Available Lattices}
+\label{sec:lat}
+
+Several lattice models can be used to fold a structure. 
+
+\vspace{0.5em}
+The currently supported lattice models and the corresponding neighboring
+vectors are:
+
+\vspace{0.5em}
+\begin{tabular}{c|l|l|c}
+	ID & Name & Neighborhood vectors & \#\\
+	\hline
+	SQR & Square & $\{\pm(1,0,0),\pm(0,1,0)\}$ & 4\\
+	CUB & Cubic & $\{\pm(1,0,0),\pm(0,1,0),\pm(0,0,1)\}$ & 6\\
+	FCC & Face Centered Cubic & 
+	$\left\{\pm(1,1,0),\pm(1,0,1),\pm(0,1,1), \atop
+	\pm(1,-1,0),\pm(1,0,-1),\pm(0,1,-1)\right\}$ & 12 
+\end{tabular}
+
+
+
+\section{Energy Functions}
+\label{sec:energy}
+
+\latfold{} supports arbitrary energy functions that are based either on contacts
+or on distance intervals. The specification of an energy function has to be
+given in text format and defines the allowed sequence alphabet as well.
+
+In general, the energy of a sequence~$S$ of length~$n$ with structure
+coordinates~$P$ is determined by
+\begin{equation}
+	E(S,P) = \sum_{1\leq i+1<j\leq n} e(S_i, S_j, P_i, P_j).
+\end{equation}
+Here, $e(S_i, S_j, P_i, P_j)$ is a placeholder for the specific evaluation
+function that is given for the different types in the following.
+
+\subsection{Contact Based Energy Function}
+\label{sec:energy:contact}
+
+A contact based energy function for an alphabet $A$ is defined by an energy
+table $E^c : |A|\times|A| \rightarrow \mathcal{R}$ such that 
+
+\begin{equation}
+	e_c(S_i, S_j, P_i, P_j) = 
+	\left\{
+	\begin{array}{ll}
+    	E^c[S_i,S_j] & \mbox{ if $P_i$ and $P_j$ are neighbored} \\
+    	0 & \mbox{ else }
+    \end{array} \right.
+\end{equation}
+
+For example, a function like this was used by Lau and Dill to define the widely
+used HP-model~\cite{Lau_Dill:89a}.
+
+\subsubsection*{\underline{ Text File Encoding }}
+
+The \latfold{} text file enconding of a contact based energy function consists of
+two parts: the alphabet elements and the energy table. A consecutive string of
+the alphabet elements in the first line determines the allowed protein sequence
+characters (the alphabet) and the dimensions of the energy table that is read
+from the remaining file.
+
+An example energy file for the HPNX-model is:
+
+\begin{center}
+\begin{boxit}
+\small
+\begin{verbatim}
+HPNX
+-4.0  0.0  0.0  0.0
+ 0.0 +1.0 -1.0  0.0
+ 0.0 -1.0 +1.0  0.0
+ 0.0  0.0  0.0  0.0
+\end{verbatim}
+\end{boxit}
+\end{center}
+
+
+\subsection{Distance Interval Based Energy Function}
+\label{sec:energy:distance}
+
+A distance insterval based energy function for an alphabet $A$ is defined by a
+consecutive set of~$k$ distance intervals with the upper bounds~$d^{up}_{1\ldots
+k}$ and an energy table $E^i_{1\ldots k} : |A|\times|A| \rightarrow \mathcal{R}$
+for each of them. Given the distance to interval index function $idx$ we define
+the evaluation function
+
+\begin{eqnarray}
+	e_i(S_i, S_j, P_i, P_j) & = & E^i_{idx(P_i,P_j)}[S_i,S_j] \\
+	idx(P_i,P_j) & = & \arg\min_{k}\;(|P_i-P_j| \leq d^{up}_k)
+\end{eqnarray}
+
+
+\subsubsection*{\underline{ Text File Encoding }}
+
+The \latfold{} text file enconding of a distance interval based energy function
+consists of three parts: the alphabet elements, the upper bounds of the intervals
+and the energy tables for the interval. A consecutive string of the alphabet
+elements in the first line determines the allowed protein sequence characters
+(the alphabet) and the dimensions of the energy tables. The second line
+contains a whitespace separated list of the upper interval bounds. Their number
+sets the number of energy tables read from the remaining file. The interval
+bounds are expected to be given in {\AA}ngstroems. For a correct scaling of
+the bounds it is necessary to give the average distance of two consecutive
+$C_\alpha$-atoms in the underlying model to \latfold{} (see input parameters in
+Sec.~\ref{sec:parameter}).
+
+An example energy file that encodes the HPNX-model using a distance interval
+based energy function is:
+
+\begin{center}
+\begin{boxit}
+\small
+\begin{verbatim}
+HPNX
+3.7 3.9 999999
+
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+
+-4.0  0.0  0.0  0.0
+ 0.0 +1.0 -1.0  0.0
+ 0.0 -1.0 +1.0  0.0
+ 0.0  0.0  0.0  0.0
+
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+ 0.0  0.0  0.0  0.0
+\end{verbatim}
+\end{boxit}
+\end{center}
+
+The number $999999$ is used as a placeholder for $+\infty$, i.e. the upper bound
+of the last distance interval. It is important to know that the average
+$C_\alpha$-distance in the underlying model was 3.8~\AA. Therefore, the resulting
+interval energy function corresponds to the contact based energy function of the
+previous section; only distances close to the average $C_\alpha$-distance are
+taken into account.
+
+
+\section{Program Parameters}
+\label{sec:parameter}
+
+\subsubsection*{\underline{ Input }}
+
+\begin{description}
+	\item[-seq] The sequence to fold globally. It has to be conform
+	to the alphabet given by the energy file (see {\bfseries -energyFile}).
+	\item[-abs] Optional: The absolute move string of the structure to start 
+	simulation with.
+	\item[-energyFile] A file that encodes the used alphabet and the
+	specific energy function (see Sec.~\ref{sec:energy} for format details).
+	\item[-energyForDist] If present, the input of {\bfseries -energyFile} will be
+	interpreted as distance interval energy function. Otherwise a contact based
+	energy functino is expected.
+	\item[-energyCalphaDist] Specifies the average distance of two
+	consecutive $C_\alpha$-atoms in the underlying model. This value is needed to
+	scale the intervals of a distance interval based energy function onto the
+	$C_\alpha$-distances of the lattice model in use.
+\end{description}
+
+\subsubsection*{\underline{ Simulation Settings }} 
+
+\begin{description}
+	\item[-kT] the relative temperature to calculate the Boltzmann weight for a
+	given structure within the formula $\exp(-E/kT)$. Thus, the parameter $kT$ 
+	sets the product of temperature ($T$) and the energy function specific scaling
+	constant ($k$).
+	\item[-maxSteps] simulation ends after this number of simulation steps is done
+ 	\item[-minE] simulation ends if energy gets below or equal the given value
+ 	\item[-seed] seed for random number generator (uses a system
+        independent linear congruent generator)
+ 	\item[-runs] number of independent folding simulations to perform
+\end{description}
+
+\subsubsection*{\underline{ Lattice Settings }} \label{sec:lat-params}
+
+\begin{description}
+	\item[-lat] The lattice model to use for the sequential folding. The
+	available list of lattice identifiers is given in Sec.~\ref{sec:lat}.
+	\item[-moveSet] Sets the move set to use for the present lattice:
+	\begin{description}
+    	\item[PullM] Pull-moves definied by Lesh et al. \cite{Lesh:RECOMB2003}
+    	\item[PivotM] Pivot-moves defined by Madras and Sokal
+    	\cite{Madras:Sokal:JSP88}
+    \end{description} 
+\end{description}
+
+
+
+\subsubsection*{\underline{ Output }}
+
+\begin{description}
+  \item[-out] The output mode along the folding simulation:
+  \begin{description}
+    \item[N] no additional output is done (default)
+    \item[E] the energy of the structure of each simulation step is printed
+    \item[S] structure and energy of each simulation step is given
+  \end{description}
+  \item[-outFile] Specifies where to write the output of simulations to. 
+  		If equal to 'STDOUT' it is written to standard output, otherwise the 
+  		given string is assumed to be the filename to write to.
+  \item[-outTiming] If present, the used cpu-time is printed.
+\end{description}
+
+
+\subsubsection*{\underline{ Miscellaneous }}
+
+\begin{description}
+	\item[-v] Give verbose output during computation.
+	\item[-vv] Give extra verbose output during computation.
+	\item[-help] Prints the available program parameters.
+\end{description}
+
+
+\section{Contact}
+
+\begin{tabular}{lcr}
+	Martin Mann  && \bfseries http://www.bioinf.uni-freiburg.de/\\
+	Bioinformatics Group\\
+	University Freiburg, Germany \\
+\end{tabular}
+
+
+
+
+
+\begin{thebibliography}{99}
+\bibitem{Lau_Dill:89a}{
+	  Kit Fun Lau and Ken A. Dill:
+	  {\bfseries A Lattice Statistical Mechanics Model of the Conformational 
+	  and Sequence Spaces of Proteins}, 
+	  \emph{Macromolecules} 1989,
+	  {\bfseries 22}(10):3986--3997
+	 }
+\bibitem{Lesh:RECOMB2003} {
+	Lesh, N., Mitzenmacher, M., and Whitesides, S.:
+	{\bfseries A complete and effective move set for simplified protein folding},
+	In \emph{Proceedings of the seventh annual international conference
+	  on Research in computational molecular biology (RECOMB'03)} 2003,
+	 188--195.
+	}
+\bibitem{Madras:Sokal:JSP88} {
+	Madras, N. and Sokal, A.~D.:
+	{\bfseries The pivot algorithm: A highly efficient {Monte Carlo} method for the
+	  self-avoiding walk},
+	\emph{Journal of Statistical Physics} 1988,
+	{\bfseries 50}, 109--186.
+	}
+\bibitem{Mann:latpack:HFSP08} {
+	Mann, M., Maticzka, D., Saunders, R., and Backofen, R.:
+	{\bfseries Classifying protein-like sequences in arbitrary lattice protein models using {LatPack}},
+	\emph{HFSP Journal} 2008,
+	{\bfseries 2}(6), 396.
+	Special issue on protein folding: experimental and theoretical approaches
+	}
+\bibitem{Mann:ELL:BIRD07} {
+	Mann, M., Will, S., and Backofen, R.:
+	{\bfseries The Energy Landscape Library - A Platform for Generic Algorithms},
+	In \emph{Proceedings of the 1st international Conference on Bioinformatics 
+	Research and Development (BIRD'07)} 2007,
+	OCG {\bfseries 217}, 83-86.
+	}
+
+
+% \bibitem{Miao.et.al:JMB:H-collapse:04}{
+% 	  J.~Miao, J.~Klein-Seetharaman and H.~Meirovitch:
+% 	  {\bfseries The Optimal Fraction of Hydrophobic Residues Required to Ensure
+% 	  Protein Collapse}, \emph{Journal of Molecular Biology}
+% 	  2003,
+% 	  {\bfseries 344}:797-811
+% 	 }
+% \bibitem{Godzik.et.al:JCC:globLat:93}{
+% 	  A.~Godzik, A.~Kolinski and J.~Skolnick:
+% 	  {\bfseries Lattice Representations of Globular Proteins: How Good Are They?},
+% 	  \emph{Journal of Computational Chemistry} 1993,
+% 	  {\bfseries 14(10)}:1194-1202
+% 	 }
+\end{thebibliography}
+ 
+
+\end{document}

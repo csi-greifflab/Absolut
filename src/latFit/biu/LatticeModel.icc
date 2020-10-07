@@ -1,0 +1,64 @@
+// $Id: LatticeModel.icc,v 1.2 2016/08/08 12:41:56 mmann Exp $
+
+
+namespace biu
+{
+
+	inline
+	bool
+	LatticeModel::operator ==(const LatticeModel& lm2) const {
+		return *latDescriptor == *(lm2.latDescriptor);
+	}
+	
+	inline
+	bool
+	LatticeModel::operator !=(const LatticeModel& lm2) const {
+		return *latDescriptor != *(lm2.latDescriptor);
+	}
+	
+	
+	inline
+	Move 
+	LatticeModel::getAbsMove(	const IntPoint& lastPoint, 
+								const IntPoint& actPoint) const {
+		assertbiu(latDescriptor != NULL, 
+			"LatticeModel has no LatticeDescriptor");
+			// vektor holen
+		return  latNeighborhood.getElement( actPoint-lastPoint).getMove();		
+	}
+	
+	inline
+	MoveSequence 
+	LatticeModel::parseMoveString( const std::string& moveStr) const {
+		assertbiu(latDescriptor != NULL, 
+			"LatticeModel has no LatticeDescriptor");
+		return latDescriptor->getSequence(moveStr);
+	}
+
+	inline
+	MoveSequence 
+	LatticeModel::pointsToRelMoves( const IPointVec& points) const {
+		assertbiu(latDescriptor != NULL, 
+			"LatticeModel has no LatticeDescriptor");
+		return absMovesToRelMoves(pointsToAbsMoves(points));	
+	}
+		
+	inline
+	std::string	
+	LatticeModel::getString(const MoveSequence& moveSeq) const {
+		assertbiu(latDescriptor != NULL, 
+			"LatticeModel has no LatticeDescriptor");
+		return latDescriptor->getString(moveSeq);
+	}
+	
+	inline
+	bool 
+	LatticeModel::areNeighbored(	const IntPoint& first, 
+									const IntPoint& second) const {
+		assertbiu(latDescriptor != NULL, 
+			"LatticeModel has no LatticeDescriptor");
+		return latDescriptor->areNeighbored(first,second);
+	}
+
+
+} // namespace biu
