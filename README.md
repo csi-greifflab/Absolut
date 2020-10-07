@@ -87,7 +87,7 @@ qtcreator Absolut/AbsolutNoLib.pro
 qtcreator Absolut/AbsolutNoLibMPI.pro
 ```
 
-*Note, the libraries Latfit, pdb-tools and gsl are provided inside Absolut with their compatible version*
+*Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version*
 
 ![Absolut! Package overview](doc/images/package.png?raw=true)
 
@@ -147,8 +147,6 @@ wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27
 
 ![Discretization](doc/images/discretize.png?raw=true)
 
-![Discretization](doc/images/GUI.png?raw=true)
-
 ### Discretization of antigens WITH user interface
 
 ```bash
@@ -158,6 +156,8 @@ wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27
 The inputs are decided from the user interface (and can also be provided in the command line). Identical outputs as above. Possible to export pictures during visualization inside the interface (command 'O', see documentation on visualization).
 
 ![Video - Discretization using the graphical interface](doc/Discretize-converted.mp4?raw=true)
+
+![Discretization](doc/images/GUI.png?raw=true)
 
 ### Get the list of available lattice antigens
 
