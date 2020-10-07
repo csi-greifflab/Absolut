@@ -1,5 +1,7 @@
 # Absolut
 Unconstrained lattice antibody-antigen bindings generator
+
+
 **Absolut** 
 - takes PDB antigens, converts them into lattice representation with integer positions. 
 - takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
@@ -11,7 +13,7 @@ The database generated with Absolut! is available at [philippe-robert.com/Absolu
 
 Absolut was written in C++. 
 
-Three versions are provided with more or less library requirements.
+Three versions are provided with more or less library requirements: *Absolut*, *AbsolutNoLib* and *AbominationMPI*.
 - All versions require **a C++ compiler**.
 - The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
 
@@ -22,7 +24,7 @@ make		# This creates 'AbsolutNoLib' executable.
 ```
 
 **AbominationMPI** is the MPI parallelized version for high throughput repertoire bindings generation. 
-- requires **MPI compiler and headers** required
+- requires **MPI compiler and headers**
 ```bash
 cd src
 #Depending on your MPI compiler,
@@ -38,6 +40,8 @@ make MPIgxx
 **Absolut** is the full version
 - requires **freeglut library** (or another other C++ glut library)
 - requires the **Qt framework**
+
+
 Help for installing these libraries (especially in Windows) is provided in the documentation
 It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NO_QT in common.h
 ```bash
@@ -55,9 +59,9 @@ qtcreator Absolut/AbsolutNoLib.pro
 qtcreator Absolut/AbsolutNoLibMPI.pro
 ```
 
-*Note, the used libraries Latfit, pdb-tools and gsl are provided inside Absolut with their compatible version*
+*Note, the libraries Latfit, pdb-tools and gsl are provided inside Absolut with their compatible version*
 
-![Absolut! Package overview](src/doc/images/package.png?raw=true)
+![Absolut! Package overview](doc/images/package.png?raw=true)
 
 
 ## Usage
@@ -71,10 +75,11 @@ Calling Absolut alone shows the list of available options.
 ./AbsolutNoLib
 ```
 
-Note: all commands are the same for *./Absolut* or *./AbsolutNoLib*
+All commands are identical for *./Absolut* or *./AbsolutNoLib*
 
 
-All-in-one example (plan 3GB of disk space, 2 GB memory and 500MB download)
+An all-in-one example for most tasks is:\
+*plan 3GB of disk space, 2 GB memory and 500MB download*
 ```bash
 #With ./Absolut or ./AbsolutNoLib:
 ./Absolut discretize 1CZ8 VW 5.25 FuC
@@ -106,13 +111,13 @@ Details for each use-case:
 - **TypePos	The**: type of positions used for discretization [CA for Carbon Alpha, CoM for Centroid center of the side-chain only, and FuC for fused center of the whole AA – default FuC]
 
 *Outputs* 
-- PDB and fasta files are downloaded from the PDB server
-- 1CZ8deIns.pdb PDB with removed insertions (using pdb-tools)
-- 1CZ8_VWprepared.pdb new PDB with only the chains of interest
-- 1CZ8discretized5.25FuC.pdb discretized chains outputed from LatFit
-- 1CZ8_VWInLattice.txt Description of the discretized antigen [Each chain is described as a starting position in the lattice (6-digits number) and a list of moves in space (straight S, up U, down D, left L, right R). See ‘info_position’ to convert lattice positions.
+- **PDB and fasta files**: are downloaded from the PDB server
+- **1CZ8deIns.pdb**: PDB with removed insertions (using pdb-tools)
+- **1CZ8_VWprepared.pdb**: new PDB with only the chains of interest
+- **1CZ8discretized5.25FuC.pdb**: discretized chains outputed from LatFit
+- **1CZ8_VWInLattice.txt**: Description of the discretized (lattice) antigen [Each chain is described as a starting position in the lattice (6-digits number) and a list of moves in space (straight S, up U, down D, left L, right R). See ‘info_position’ to convert lattice positions.
 
-![Discretization](src/doc/images/discretization.png?raw=true)
+![Discretization](doc/images/discretization.png?raw=true)
 
 ### Discretization of antigens WITH user interface
 
@@ -140,20 +145,21 @@ The inputs are decided from the user interface (and can also be provided in the 
 4	1H0D_C
 ```
 
-The library of discretized antigens is defined inside *antigenLib.cpp*. Their name is "PDB_Chains", for instance "1CZ8_VW". More than 150 discretized antigens are already available. If you wish to add your own, please manually add them into antigenLib.cpp.
+The library of lattice antigens is defined inside *antigenLib.cpp*. Their name is "PDB_Chains", for instance "1CZ8_VW". More than 150 lattice antigens are already available. If you wish to add your own, please manually add them into antigenLib.cpp.
 
 
-### Generation of a bindings of CDR3s on a discretized antigen from the library
+### Generation of a bindings of CDR3s on a lattice (discretized) antigen from the library
 
-This takes a discretized antigen and a list of CDR3s sequences and returns the best binding structure of each 11-mers of each CDR3 around the antigen.
+This takes a lattice antigen and a list of CDR3s sequences and returns the best binding structure of each 11-mers of each CDR3 around the antigen.
 
-There are two ways. The singleBinding option allows to calculate for one CDR3 in particular and is good for testing. 
-The repertoire option allows to process a text file with a list of CDR3s.
+There are two ways. The *singleBinding* option allows to calculate for one CDR3 in particular and is good for testing. 
+The *repertoire* option allows to process a text file with a list of CDR3s.
 
-Step 1: Get information on the requested pre-computed files
+**Step 1:** Get requested pre-computed files (once only) 
 
 ```bash
 ./Absolut info_fileNames 1FBI_X
+wget ...
 ```
 
 *Output*
@@ -163,7 +169,7 @@ use:
 wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
 ```
 
-Step 2: calculate the bindigns, after the precomputed structure file is in the same (or parent) folder
+**Step 2:** Calculate the bindigns, after the precomputed structure file is in the same (or parent) folder
 
 ```bash
 #For one CDR3 only
@@ -182,6 +188,7 @@ mpiexec –n NbProcesses ./AbominationMPI repertoire 1FBI_X ListCDR3s.txt 50
 ```
 
 *Inputs*
+
 - **Antigen_ID**: The ID of the antigen in the library. 
 - **ListCDR3s.txt**: a text file with a list of CDR3s. Two columns, ID and CDR3 Amino Acid sequence, tab-separated, no header:
 ```bash
@@ -202,7 +209,8 @@ The repertoire option stops if the files are not available.
 
 
 *Outputs*
-File called "1FBI_XFinalBindings_Process_1_Of_1.txt", containing the structural annotation on how each 11-mer (Slide) binds to the antigen, with its binding energy and its structure (position-list of moves)
+
+- Text file called *"1FBI_XFinalBindings_Process_1_Of_1.txt"*, containing the structural annotation on how each 11-mer (Slide) binds to the antigen, with its binding energy and its structure (position-list of moves)
 A new ID is generated for each slide, with the CDR3ID from the input file followed with \_ and the number of the slide and a/b/c... if different structures share the best binding energy. 
 The best way a CDR3 binds to the antigen is annotated with Best=true.
 This file format is called **Raw Binding** dataset
@@ -222,7 +230,7 @@ ID_slide_Variant      CDR3		Best	Slide	Energy	Structure
 …
 ```
 
-![Repertoire](src/doc/images/repertoire.png?raw=true)
+![Repertoire](doc/images/repertoire.png?raw=true)
 
 ### Analyze the 3D binding features from a raw binding
 
@@ -244,7 +252,7 @@ ID_slide_Variant      CDR3		Best	Slide	Energy	Structure
 - **outputFeaturesFile.txt** with the same lines as the input line, but extended with one column per feature.
 The features are: 
 
-![List of features](src/doc/images/features.png?raw=true)
+![List of features](doc/images/features.png?raw=true)
 
 *Note: you might want to keep only the best Slides per CDR3 (Best=true) from the raw binding file before generating the features.*
 
