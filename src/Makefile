@@ -174,6 +174,14 @@ Absolut/AbsolutNoLib.pro:
 
 all: clean Makefile AbsolutNoLib 
 
+full: clean
+full: CC = $(CC)
+full: CXX = $(CXX)
+full: LINK = $(LINKCXX)
+full: CXXFLAGS = $(CXXFLAGS)
+full: TARGET = $(TARGETFULL)
+full: Absolut
+
 MPIcxx: clean
 MPIcxx: CC = $(MPICC)
 MPIcxx: CXX = $(MPICXX)

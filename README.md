@@ -17,11 +17,20 @@ Three versions are provided with more or less library requirements: *Absolut*, *
 - All versions require **a C++ compiler**.
 - The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
 
+
+```bash
+#In linux:
+
+```
+
+
 **AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization.
 ```bash
 cd src
-make		# This creates 'AbsolutNoLib' executable.
+make		# This creates 'AbsolutNoLib' executable. 
 ```
+
+![Video - download and install NoLib in Linux](doc/Download_Install_NoLib_Linux-converted.mp4?raw=true)
 
 **AbominationMPI** is the MPI parallelized version for high throughput repertoire bindings generation. 
 - requires **MPI compiler and headers**
@@ -38,15 +47,39 @@ make MPIgxx
 
 
 **Absolut** is the full version
-- requires **freeglut library** (or another other C++ glut library)
 - requires the **Qt framework**
-
+- requires **freeglut library** (or another other C++ glut library)
+- requires the **gsl** library
 
 Help for installing these libraries (especially in Windows) is provided in the documentation
 It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NOQT in common.h
+
+Installing on linux:
 ```bash
-cd src
-make		#This creates both Absolut and AbsolutNoLib
+#to find the available packages in your distribution
+apt-cache search qtbase
+apt-cache search libqt5
+
+#These packages should do the job
+sudo apt-get install qtbase5-dev
+sudo apt-get install qtcreator
+sudo apt-get install libqt5svg5
+sudo apt-get install libqt5printsupport5
+sudo apt-get install libgsl-dev
+```
+![Video - install full Absolut in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
+
+Installing on Windows:
+
+
+Compiling 
+
+```bash
+#Please DO NOT compile the full version in src/ folder, it would destroy the Absolut/ subfolder and the original Makefile ...
+#We recommend to compile into src/bin because Absolut expects the pdb-tools scripts to be directly in ../pdb-tools
+cd src/bin/
+qmake ../Absolut/Absolut.pro	#qmake creates a new Makefile embedding Qt libraries locations
+make		#This creates Absolut
 ```
 
 
@@ -127,6 +160,7 @@ Details for each use-case:
 
 The inputs are decided from the user interface (and can also be provided in the command line). Identical outputs as above. Possible to export pictures during visualization inside the interface (command 'O', see documentation on visualization).
 
+![Video - Discretization using the graphical interface](doc/Discretize-converted.mp4?raw=true)
 
 ### Get the list of available lattice antigens
 

@@ -58,7 +58,7 @@ QMAKE_CXXFLAGS += -std=c++11 -Wno-extra
 # In order to use Ymir without openGL, you can use YmirNoLib.pri instead.
 # Note that Ymir does not use any QT library, it could be compiled outside of the Qt framework
 
-unix: LIBS += -lglut -lGLU -lGL -lSOIL
+unix: LIBS += -lglut -lGLU -lGL
 
 win32: {
 LIBS += -LC:/MyPrograms/freeglut-3.2.1/bin/ -lfreeglut
