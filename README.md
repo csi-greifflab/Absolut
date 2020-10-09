@@ -1,8 +1,8 @@
-# Absolut
+# Absolut!
 Unconstrained lattice antibody-antigen bindings generator
 
 
-**Absolut** 
+**Absolut!** 
 - takes PDB antigens, converts them into lattice representation with integer positions. 
 - takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
 - generates features of antibody-antigen bindings directly usable for Machine Learning
@@ -11,7 +11,7 @@ The database generated with Absolut! is available at [philippe-robert.com/Absolu
 
 ## Installation
 
-Absolut was written in C++. 
+Absolut! was written in C++. 
 
 Three versions are provided with more or less library requirements: *Absolut*, *AbsolutNoLib* and *AbominationMPI*.
 - All versions require **a C++ compiler**.
@@ -61,7 +61,7 @@ sudo apt-get install libqt5svg5
 sudo apt-get install libqt5printsupport5
 sudo apt-get install libgsl-dev
 ```
-![Video - install full Absolut in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
+![Video - install full Absolut! in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
 
 Installing on Windows:
 
@@ -71,7 +71,7 @@ Compiling
 
 ```bash
 #Please DO NOT compile the full version in src/ folder, it would destroy the Absolut/ subfolder and the original Makefile ...
-#We recommend to compile into src/bin because Absolut expects the pdb-tools scripts to be directly in ../pdb-tools
+#We recommend to compile into src/bin because Absolut! expects the pdb-tools scripts to be directly in ../pdb-tools
 cd src/bin/
 qmake ../Absolut/Absolut.pro	#qmake creates a new Makefile embedding Qt libraries locations
 make		#This creates Absolut
@@ -287,7 +287,7 @@ The features are:
 
 *Note: you might want to keep only the best Slides per CDR3 (Best=true) from the raw binding file before generating the features.*
 
-### Visualize antigens and bindings in 3D (Needs full Absolut version)
+### Visualize antigens and bindings in 3D (Needs full Absolut! version)
 
 To visualize an antigen from the library
 ```bash
