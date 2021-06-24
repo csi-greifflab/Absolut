@@ -1,5 +1,5 @@
 # Absolut!
-Unconstrained lattice antibody-antigen bindings generator
+Unconstrained lattice antibody-antigen bindings generator - One tool to simulate them all!
 
 
 **Absolut!** 
@@ -8,6 +8,10 @@ Unconstrained lattice antibody-antigen bindings generator
 - generates features of antibody-antigen bindings directly usable for Machine Learning
 
 The database generated with Absolut! is available at [philippe-robert.com/Absolut/Database/](http://www.philippe-robert.com/Absolut/Database/).
+
+## License
+
+Absolut! is distributed under the GNU affero general public license (see License.md)
 
 ## Installation
 
