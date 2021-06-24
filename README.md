@@ -91,7 +91,7 @@ qtcreator Absolut/AbsolutNoLib.pro
 qtcreator Absolut/AbsolutNoLibMPI.pro
 ```
 
-*Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version*
+*Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version - Latfit has been slighty modified to consider the center of a full residue (not only the side-chain) during discretization*
 
 ![Absolut! Package overview](doc/images/package.png?raw=true)
 
