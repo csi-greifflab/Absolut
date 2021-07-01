@@ -46,8 +46,9 @@ make MPIgxx
 
 **Absolut** is the full version
 - requires the **Qt framework**
-- requires **freeglut library** (or another other C++ glut library)
-- requires the **gsl** library
+- requires **freeglut library** (or another other C++ glut library) fro visualizing 3D lattice structures
+- requires the **gsl** library for discretizing new antigens
+- requires **wget**, for downloading files (like PDBs when discretizing)
 
 Help for installing these libraries (especially in Windows) is provided in the documentation
 It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NOQT in common.h
