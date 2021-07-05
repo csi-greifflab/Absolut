@@ -7,11 +7,19 @@ Unconstrained lattice antibody-antigen bindings generator - One tool to simulate
 - takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
 - generates features of antibody-antigen bindings directly usable for Machine Learning
 
-The database generated with Absolut! is available at [philippe-robert.com/Absolut/Database/](http://www.philippe-robert.com/Absolut/Database/).
+The database generated with Absolut! is available at [https://greifflab.org/Absolut/](https://greifflab.org/Absolut/).
 
 ## License
 
 Absolut! is distributed under the GNU affero general public license (see License.md)
+
+## Documentation / Reference
+
+You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
+
+The method and analyses of antibody-antigen bindings are explained in:
+- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction' (will be available in a few days in BioRXiV)
+- Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', BioRXiV [https://www.biorxiv.org/content/10.1101/766535v1](link)
 
 ## Installation
 
@@ -22,7 +30,7 @@ Three versions are provided with more or less library requirements: *Absolut*, *
 - The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
 
 
-**AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization.
+**AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization. We recommend first compiling/running AbsolutNoLib, which should work smoothly.
 ```bash
 cd src
 make		# This creates 'AbsolutNoLib' executable. 
@@ -44,16 +52,20 @@ make MPIgxx
 ```
 
 
-**Absolut** is the full version
+**Absolut** is the full version,
 - requires the **Qt framework**
 - requires **freeglut library** (or another other C++ glut library) fro visualizing 3D lattice structures
 - requires the **gsl** library for discretizing new antigens
 - requires **wget**, for downloading files (like PDBs when discretizing)
 
-Help for installing these libraries (especially in Windows) is provided in the documentation
-It is possible to use only qt or only freeglut by #define ALLOW_GRAPHICS or #define NOQT in common.h
+Installing and then linking the libraries can be tricky depending on the OS. 
+Full help for installing these libraries (especially in Windows) is provided in the documentation doc/HowToAbsolut
 
-Installing on linux:
+It is possible to use a subset of libraries (to avoid installing them) by changing some hearder. 
+#define ALLOW_GRAPHICS in common.h activates codes using freeglut/openGL. Comment this line to be independent of freeglut. 
+it is possible to compile without the Qt platform by adding #define NOQT in common.h and CONFIG += -QT in Absolut/Absolut.pro
+
+Installing on linux (simplest):
 ```bash
 #to find the available packages in your distribution
 apt-cache search qtbase
@@ -92,7 +104,28 @@ qtcreator Absolut/AbsolutNoLib.pro
 qtcreator Absolut/AbsolutNoLibMPI.pro
 ```
 
-*Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version - Latfit has been slighty modified to consider the center of a full residue (not only the side-chain) during discretization*
+Installing on MAC:
+
+```bash
+#if no recent g++ compiler, use this command (will also install g++)
+brew install gcc 
+brew install wget
+brew install qt
+brew install gsl
+brew install freeglut
+```
+
+Then, from the src/bin/ folder, 
+```bash
+qmake ../Absolut/Absolut.pro
+make
+```
+
+Depending on your g++ compiler, there might be conflicts between the C++ language of the libraries and the C++ standard libraries provided with the compiler. 
+This might be solved by adding "QMAKE_CXXFLAGS += -std=c++14 -std=c++17" inside Absolut/Absolut.pro. We didn't add these lines by default in case your C++ compiler doesn't support C++17.
+
+
+*Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version (and do not need to be installed by the user) - Latfit has been slighty modified to consider the center of a full residue (not only the side-chain) during discretization*
 
 ![Absolut! Package overview](doc/images/package.png?raw=true)
 
