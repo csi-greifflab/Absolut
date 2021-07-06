@@ -42,7 +42,9 @@ bool areStructEqual(struct3D& s1, struct3D& s2){
 
 // Idea: there are always two ways to describe the same structure (from both ends)
 // so we would like to always use the same ID. Easy, from the two starting positions, take the lowest.
-std::pair<string, int> uniqueStructure(struct3D& s1){
+
+// The getinverted returns that the structure was inverted
+std::pair<string, int> uniqueStructure(struct3D& s1){ //, bool& gotInverted){
     if(s1.endingPosition < s1.startingPosition){
         string rev = revert(s1.sequence);
 
@@ -53,8 +55,30 @@ std::pair<string, int> uniqueStructure(struct3D& s1){
                     "Origin: " << s1.sequence << "-" << s1.startingPosition << " and raised " <<  fromOtherEnd.sequence << "-" << fromOtherEnd.startingPosition << endl;
             return std::pair<string, int>("",0);
         }
+        //gotInverted = true;
         return std::pair<string, int>(rev,s1.endingPosition);
     }
+    //gotInverted = false;
+    return std::pair<string, int>(s1.sequence, s1.startingPosition);
+}
+
+
+// The getinverted returns that the structure was inverted
+std::pair<string, int> oppositeEqualStructure(struct3D& s1){ //, bool& gotInverted){
+    if(s1.endingPosition >= s1.startingPosition){
+        string rev = revert(s1.sequence);
+
+        // test, can be ignored later
+        struct3D fromOtherEnd(rev, UnDefined, s1.endingPosition);
+        if(!areStructEqual(s1, fromOtherEnd)){
+            cerr << "ERR: getUniqueIDStructure, for whatever reason, the reversing of structure failed.\n"
+                    "Origin: " << s1.sequence << "-" << s1.startingPosition << " and raised " <<  fromOtherEnd.sequence << "-" << fromOtherEnd.startingPosition << endl;
+            return std::pair<string, int>("",0);
+        }
+        //gotInverted = true;
+        return std::pair<string, int>(rev,s1.endingPosition);
+    }
+    //gotInverted = false;
     return std::pair<string, int>(s1.sequence, s1.startingPosition);
 }
 
@@ -183,6 +207,7 @@ std::map<string, int> groupStructuresInClasses(vector<struct3D*> toParse){
         // look for this ID in the dictionnary
         std::map<string, int>::iterator it = res.find(ID);
         if(it != res.end()){
+
             it->second++;
         } else {
             res.insert(std::pair<string, int>(ID, 1));

@@ -30,7 +30,8 @@ struct lattice{
                         /// \brief Coordinates to position integer ID \ingroup Lattice
     static int idFromPosisition(vector<int> position);
                         /// \brief Coordinates to position integer ID \ingroup Lattice
-    static int idFromPosisition(float x, float y, float z);
+    static int idFromPosisition(double x, double y, double z);
+    static int idFromPosisition(int x, int y, int z);
 
                         /// \brief integer ID of all neighbors of a position (from its ID) \ingroup Lattice
     static vector<int> idNeighbors(int IDcoord);

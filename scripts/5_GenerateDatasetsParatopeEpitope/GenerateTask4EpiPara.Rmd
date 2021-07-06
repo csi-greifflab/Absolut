@@ -1,0 +1,378 @@
+
+# This file is generating the data files for ML Task 1 and Task 2
+# It needs to be called in the folder where ll the 1FBI_XAnalyses/ folders are
+# It browses along all the XXXX_XAnalyses/ folders and creates:
+#     - datasets for Task 1 for each antigen (inside their respective Analyses folder)
+#     - merged datasets along all antigens for ML Task 2
+```{r}
+
+library(ggplot2)
+library(dplyr)
+
+degree = 1
+
+if(degree == 1){
+    folder = "D:/pprobert/Datasets/Features/"
+}
+if(degree == 2){
+    folder = "D:/pprobert/FeaturesDegree2/"
+}
+```
+
+```{r}
+```
+
+
+```{r}
+setwd(folder)
+
+#List of antigens we did process
+toParse <- list.dirs(path = ".", full.names = TRUE, recursive = TRUE)
+listAvailable <- c()
+for (rep in toParse){
+    #print(substring(rep, nchar(rep) - 7, nchar(rep)))
+    if((nchar(rep) > 1) & (substring(rep, nchar(rep) - 7, nchar(rep)) == "Analyses")){
+        #print(rep)
+        #Remove ./ and Analyses to get back antigenID
+        listAvailable <- c(listAvailable, substring(rep, 3, nchar(rep) - 8))
+    }
+}
+listAvailable    
+```
+
+```{r}
+length(listAvailable)
+```
+
+
+
+```{r}
+
+```
+
+```{r}
+a = c(8,1,2,3,4,4,5)
+duplicated(a)
+```
+
+```{r}
+#Adds a star to the paratope
+Parastarise <- function(x){
+    return(paste(x ,"*", sep=""));
+}
+Parastarise("A1B3C2")
+```
+
+
+
+```{r}
+Parastarization <- function(df){
+    df2 <- data.frame(df[,c(1,2,3,4,6,8,10)], apply(df[ , c(5,7,9,11)], 2, Parastarise), df[,c(12,13)])
+    return(df2)
+}
+```
+
+
+
+```{r}
+#Removes the degree...
+library(stringr)
+Undeg <- function(x){
+    return(str_replace_all(str_replace_all(x, "[12345]", ''), "--","-"));
+}
+Undeg("A1B3--C2--D3----A1")
+
+
+```
+
+```{r}
+#Generate paratope-epitope map,
+
+#Now we will have two variants: Either we generate datasets of CDR3s,
+# or we generate from slices. The source files will be different:
+# - antigenID, "_MascotteFeatures.txt" for the CDR3 datasets, then we output CDR3s and the AA usage of CDR3s
+
+#No balancing needed
+generateMLTask4 <- function(folderFeatures, antigenID, useSlices=TRUE, uniqueSlices=TRUE, binderRef="Mascotte", nameOut="Task4"){
+    
+    #Step 1: read filtered files with either the top 1% CDR3s or (if useSlices=true) all the slices that are above this same threshold
+    suffix = ""
+    if(degree == 2){
+        suffix = "D2"
+    }
+    if(useSlices){
+        fileFeaturesBinders = paste(folderFeatures, antigenID, "Analyses/", antigenID, "_", binderRef, "SlicesFeatures", suffix, ".txt", sep="")
+    } else {
+        fileFeaturesBinders = paste(folderFeatures, antigenID, "Analyses/", antigenID, "_", binderRef, "Features", suffix, ".txt", sep="")
+    }
+    print(fileFeaturesBinders)
+    
+    bind <- read.table(fileFeaturesBinders, header=TRUE)
+    head(bind)
+    
+    print(paste(length(bind$ID_slide_Variant), antigenID))
+    
+    if(useSlices){
+        # A duplicate Slice should have
+        if(uniqueSlices){
+            bind <- bind[!duplicated(bind$Slide),]   
+        }
+    }
+    print(paste(length(bind$ID_slide_Variant), "Binders"))
+    
+    # Get the distribution of CDR3 size on both binders and nonbinders
+    #distribCDR <- bind %>% group_by(sizeCDR3) %>% mutate(number=n()) %>% slice(1) %>% select(sizeCDR3, number)
+
+
+    # Now shorten the files with only the columns of interest (Slide or CDR3, with the respective AA composition)
+    # We keep track of the CDR3 size to later sample from a wished CDR3 lentgth distribution among non-binders (we have a lot of them)
+    if(useSlices){
+        AllBinders <- cbind(bind) %>% mutate(Label=antigenID) %>% select(Slide, Label, AGboundPositions, hotspot_ID, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope,  motifsSizeGapsLigand, motifsSizeGapsRec, AAcompoFullSlice, sizeCDR3)
+       
+    } else {
+        AllBinders <- cbind(bind) %>% mutate(Label=antigenID) %>% select(CDR3, Label, AGboundPositions, hotspot_ID, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope,  motifsSizeGapsLigand, motifsSizeGapsRec, AAcompoFullCDR, sizeCDR3)
+        
+    }
+    AllBinders <- Parastarization(AllBinders) #Order is changed within cols 5-11 so this should still work:
+    AllBindersNoDegree <- data.frame(AllBinders[,c(1,2,3)], apply(AllBinders[ , c(4, 5,6,7,8,9,10,11)], 2, Undeg), AllBinders[,c(12,13)])
+
+    if(useSlices){
+        write.table(AllBinders, paste(antigenID, "_", nameOut, "_Slice_ParaEpi", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+        write.table(AllBindersNoDegree, paste(antigenID, "_", nameOut, "_Slice_ParaEpi_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+    } else {
+        write.table(AllBinders, paste(antigenID, "_", nameOut, "_CDR3_ParaEpi", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+        write.table(AllBindersNoDegree, paste(antigenID, "_", nameOut, "_CDR3_ParaEpi_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+    }
+    return(AllBinders)
+}
+```
+
+```{r}
+antigenID = "1ADQ_A"
+#folder = "D:/pprobert/Datasets/Features/"
+test <- generateMLTask4(folder, antigenID, useSlices = TRUE, uniqueSlices=TRUE, binderRef="Mascotte", nameOut="Task4")
+test
+```
+
+```{r}
+Parastarization(test)
+```
+
+```{r}
+regenerateData = FALSE
+if(regenerateData){
+    #antigenID = "1ADQ_A"
+    #Note: now, memory will explode, hihi
+    pulledCDR3 <- NULL
+    pulledSlices <- NULL
+    for(antigenID in listAvailable){
+        resCDR <- generateMLTask4(folder, antigenID, useSlices = FALSE)
+        resSlice <- generateMLTask4(folder, antigenID, useSlices = TRUE, uniqueSlices = TRUE)
+        
+    	#resCDRHarderV1 <- generateMLTask1(antigenID, "Binder", useSlices = FALSE, uniqueSlices=FALSE, binderRef="Mascotte", nonbinderRef="LooserExclusive", nameOut="Task1aMvsL")
+    	#resSliceHarderV1 <- generateMLTask1(antigenID, "Binder", useSlices = TRUE, uniqueSlices=TRUE, binderRef="Mascotte", nonbinderRef="LooserExclusive", nameOut="Task1aMvsL")
+        #resCDRHarderV2 <- generateMLTask1(antigenID, "Binder", useSlices = FALSE, uniqueSlices = FALSE, binderRef="Heroes", nonbinderRef="MascotteExclusive", nameOut="Task1bHvsM")
+        #resSliceHarderV2 <- generateMLTask1(antigenID, "Binder", useSlices = TRUE, uniqueSlices = TRUE, binderRef="Heroes", nonbinderRef="MascotteExclusive", nameOut="Task1bHvsM")
+    	
+        pulledCDR3 <- rbind(pulledCDR3, resCDR)
+        pulledSlices <- rbind(pulledSlices, resSlice)
+    }
+}
+```
+```{r}
+#a <- read.table("D:/pprobert/FeaturesDegree2/4N9G_CAnalyses/4N9G_C_MascotteFeaturesD2.txt")
+```
+
+```{r}
+regenerateData = FALSE
+if(regenerateData){
+    head(pulledSlices)
+}
+```
+```{r}
+degree
+```
+
+
+```{r}
+library(dplyr)
+```
+
+```{r}
+regenerateData = FALSE
+if(regenerateData){
+    if(degree == 1){
+        write.table(pulledSlices, paste("Task4_Merged_Slice_ParaEpi.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+        write.table(pulledCDR3, paste("Task4_Merged_CDR3_ParaEpi.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+    }
+    if(degree == 2){
+        write.table(pulledSlices, paste("Task4_Merged_Slice_ParaEpiD2.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+        write.table(pulledCDR3, paste("Task4_Merged_CDR3_ParaEpiD2.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+    }
+}
+```
+
+
+
+
+# ===========0 reopening instead of redoing everyh
+```{r}
+#degree = 2
+print(degree)
+folderSaved = "D:/pprobert/Datasets/Task4/"
+#reprocess <- pulledSlices # read.table(paste(folderSaved, "Task4_Merged_Slice_ParaEpi.txt", sep=""), header=TRUE)
+
+if(degree == 1){
+    reprocess <- read.table(paste(folderSaved, "Task4_Merged_Slice_ParaEpi.txt", sep=""), header=TRUE)
+    # paste("Task4_Merged_CDR3_ParaEpi.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+}
+if(degree == 2){
+    reprocess <- read.table(paste(folderSaved, "Task4_Merged_Slice_ParaEpiD2.txt", sep=""), header=TRUE)
+    #write.table(pulledCDR3, paste("Task4_Merged_CDR3_ParaEpiD2.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+}
+```
+
+```{r}
+reprocess
+```
+```{r}
+suffix = ""
+if(degree == 2){
+    suffix = "D2"
+}
+suffix
+```
+
+
+```{r}
+Task4_I_ABDB_Motifs <- reprocess %>% select(motifsSizeGapsLigand, motifsSizeGapsRec) %>% group_by(motifsSizeGapsLigand, motifsSizeGapsRec) %>% mutate(duplicates = n()) %>% ungroup() #slice(1)
+Task4_I_ABDB_Motifs
+```
+
+```{r}
+write.table(Task4_I_ABDB_Motifs, paste("Task4_I_ABDB_Motifs", suffix, "Ungrouped.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+```{r}
+Task4_A_EpiSeq_ParaSeq <- reprocess %>% select(seqAGEpitope, seqABParatope) %>% group_by(seqAGEpitope, seqABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_A_EpiSeq_ParaSeq
+```
+
+```{r}
+write.table(Task4_A_EpiSeq_ParaSeq, paste("Task4_A_EpiSeq_ParaSeq", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+
+```{r}
+Task4_B_EpiMotif_ParaMotif <- reprocess %>% select(motifAGEpitope, motifABParatope) %>% group_by(motifAGEpitope, motifABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_B_EpiMotif_ParaMotif
+```
+
+```{r}
+write.table(Task4_B_EpiMotif_ParaMotif, paste("Task4_B_EpiMotif_ParaMotif", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+```{r}
+Task4_C_EpiAgr_ParaAgr <- reprocess %>% select(agregatesAGEpitope, agregatesABParatope) %>% group_by(agregatesAGEpitope, agregatesABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_C_EpiAgr_ParaAgr
+```
+
+```{r}
+write.table(Task4_C_EpiAgr_ParaAgr, paste("Task4_C_EpiAgr_ParaAgr", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+```{r}
+Task4_D_EpiChem_ParaChem <- reprocess %>% select(chemicalAGEpitope, chemicalABParatope) %>% group_by(chemicalAGEpitope, chemicalABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_D_EpiChem_ParaChem
+```
+
+```{r}
+write.table(Task4_D_EpiChem_ParaChem, paste("Task4_D_EpiChem_ParaChem", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+
+```{r}
+#head(pulledSlices)
+```
+
+
+
+
+```{r}
+#head(pulledSlices)
+```
+```{r}
+#Useless, no?
+pulledSlices = reprocess
+```
+
+```{r}
+pulledSlicesNoDegree <- data.frame(reprocess[,c(1,2,3)], apply(reprocess[ , c(4, 5,6,7,8,9,10,11)], 2, Undeg), reprocess[,c(12,13)])
+pulledSlicesNoDegree
+```
+```{r}
+#pulledCDR3NoDegree <- data.frame(pulledCDR3[,c(1,2,3)], apply(pulledCDR3[ , c(4, 5,6,7,8,9,10,11)], 2, Undeg), pulledCDR3[,c(12,13)])
+#pulledCDR3NoDegree
+```
+
+#write.table(pulledCDR3, "Task2A_mergedBalanced.txt", row.names = FALSE, sep = "\t", quote = FALSE)
+#write.table(pulledSlice, "Task2A_SlicesmergedBalanced.txt", row.names = FALSE, sep = "\t", quote = FALSE)
+
+```{r}
+write.table(pulledSlicesNoDegree, paste("Task4_Merged_Slice_NoDegree_ParaEpi", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+#write.table(pulledCDR3NoDegree, paste("Task4_Merged_CDR3_NoDegree_ParaEpi.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+
+```{r}
+Task4_E_EpiSeq_ParaSeq <- pulledSlicesNoDegree %>% select(seqAGEpitope, seqABParatope) %>% group_by(seqAGEpitope, seqABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_E_EpiSeq_ParaSeq
+```
+
+```{r}
+write.table(Task4_E_EpiSeq_ParaSeq, paste("Task4_E_EpiSeq_ParaSeq_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+
+```{r}
+Task4_F_EpiMotif_ParaMotif <- pulledSlicesNoDegree %>% select(motifAGEpitope, motifABParatope) %>% group_by(motifAGEpitope, motifABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_F_EpiMotif_ParaMotif
+```
+
+```{r}
+write.table(Task4_F_EpiMotif_ParaMotif, paste("Task4_F_EpiMotif_ParaMotif_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+
+```{r}
+Task4_G_EpiAgr_ParaAgr <- pulledSlicesNoDegree %>% select(agregatesAGEpitope, agregatesABParatope) %>% group_by(agregatesAGEpitope, agregatesABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_G_EpiAgr_ParaAgr
+```
+
+```{r}
+write.table(Task4_G_EpiAgr_ParaAgr, paste("Task4_G_EpiAgr_ParaAgr_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+
+
+```{r}
+Task4_H_EpiChem_ParaChem <- pulledSlicesNoDegree %>% select(chemicalAGEpitope, chemicalABParatope) %>% group_by(chemicalAGEpitope, chemicalABParatope) %>% mutate(duplicates = n()) %>% slice(1)
+Task4_H_EpiChem_ParaChem
+```
+
+```{r}
+write.table(Task4_H_EpiChem_ParaChem, paste("Task4_H_EpiChem_ParaChem_NoDeg", suffix, ".txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
+```
+

@@ -716,7 +716,7 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
         #ifdef ALLOW_GRAPHICS
         if(true){
             cerr << "Now displaying 2500 / " << bindTotSeqList.size() << " found structures " << endl;
-            char *c[] = {(char*)"Hello",NULL};
+            char *c[] = {(char*)"Hello",nullptr};
             glDisplay(0,c);
             //addToDisplay(merged);
             superProtein* ligandProt = new superProtein(*ligand);

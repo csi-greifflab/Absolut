@@ -814,7 +814,7 @@ string print(protein& op){
 
 //void *memdup(const void *src, size_t sz) {
 //        void *mem = malloc(sz);
-//        return mem ? memcpy(mem, src, sz) : NULL;
+//        return mem ? memcpy(mem, src, sz) : nullptr;
 //}
 
 //#define ALLOC_INIT(type, ...)   \

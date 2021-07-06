@@ -30,6 +30,7 @@ struct antigenInfo {
     vector< vector<int> > hotspotsCore; // list of positions 100% shared in a hotspot
     vector< vector<int> > hotspotsLarge; // list of positions 100% shared in a hotspot
     vector<double> thresholds; // list of affinity thresholds from the murine dataset.
+    string antibodyChains;
 
     string print();
 };

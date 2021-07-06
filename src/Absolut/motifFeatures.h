@@ -15,7 +15,7 @@ void testBestSequencesPerStructure();
 void testFeatures();
 
 // This is the main function that calculates the features.
-enum {interCodeWithIDpos, listAAPairs, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, positionsBound, hotspot_ID, AAcompoAGEpitope, AAcompoABParatope, AAcompoFullSlice, AAcompoFullCDR, sizeCDR3, NB_features}; //nbneighbors, distChem, selfFolding,
+enum {interCodeWithIDpos, listAAPairs, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, positionsBound, hotspot_ID, segmentedABParatope, segmentedAGEpitope, interMaskABParatope, interMaskAGEpitope, AAcompoAGEpitope, AAcompoABParatope, AAcompoFullSlice, AAcompoFullCDR, sizeCDR3, NB_features}; //nbneighbors, distChem, selfFolding,
 vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int minDegreeInteract = 1, bool includeDegree = false);
 
 

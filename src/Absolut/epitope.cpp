@@ -473,7 +473,7 @@ dataset<analyzedBinding> exampleAnalyzedDatasetFor1FBI(){
         superProtein s2(s);
         string structureID = getUniqueIDStructure(s);
 
-        //enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompoABParatope, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
+        //enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompoABParatope, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, segmentedABParatope, segmentedAGEpitope, interMaskABParatope, interMaskAGEpitope, positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
         int degree = 1;
         vector<string> analyzedFeatures = structuralFeatures(*(AG.first), s2, degree);
 
@@ -490,6 +490,45 @@ dataset<analyzedBinding> exampleAnalyzedDatasetFor1FBI(){
     return annotatedDataset;
 }
 
+// a bit symmetrical function, shows two proteins and the interface of binding.
+void showParatopeEpitope(superProtein* prot1, superProtein* prot2, vector<int> forbiddenPos){
+    set<int> PosProt1 = getOccupiedPositions(prot1);
+    set<int> PosProt2 = getOccupiedPositions(prot2);
+    set<int> vicinity1 = neighborPositions(PosProt1);
+    set<int> vicinity2 = neighborPositions(PosProt2);
+
+    // epitope
+    set<int> interface1 = intersection_sets(PosProt1, vicinity2);
+    // paratope
+    set<int> interface2 = intersection_sets(PosProt2, vicinity1);
+
+    cout << "Interface 1 is: " << print(interface1) << endl;
+    cout << "Interface 2 is: " << print(interface2) << endl;
+    #ifdef ALLOW_GRAPHICS
+    setHeatmapColorZero({0.2, 0.2, 0.2});
+    setHeatmapColorOne({1.0, 0.1, 0.1});
+    #endif
+
+    vector<std::pair<int, double> > heatmap1;
+    for(set<int>::iterator it = interface1.begin(); it != interface1.end(); ++it){
+        heatmap1.push_back(std::pair<int, double> (*it, 1.0));
+    }
+
+    vector<std::pair<int, double> > heatmap2;
+    for(set<int>::iterator it = interface2.begin(); it != interface2.end(); ++it){
+        heatmap2.push_back(std::pair<int, double> (*it, 1.0));
+    }
+
+    #ifdef ALLOW_GRAPHICS
+    //Note: can not delete these pointers, they are needed for plotting after the function is finished
+    if(forbiddenPos.size() > 0){
+        addToDisplay(new set<int>(forbiddenPos.begin(), forbiddenPos.end()));
+    }
+    addToDisplay(new vector<std::pair<int, double> >(heatmap1));
+    addToDisplay(new vector<std::pair<int, double> >(heatmap2));
+    #endif
+}
+
 void showBindingHotspots(dataset<analyzedBinding>& annotatedDataset, string antigenID, int sizeSet){
 
     vector< std::pair<string, string> > res = setCoveringStructures(annotatedDataset, sizeSet);
@@ -503,6 +542,8 @@ void showBindingHotspots(dataset<analyzedBinding>& annotatedDataset, string anti
     #ifdef ALLOW_GRAPHICS
     setHeatmapColorZero({0.2, 0.2, 0.2});
     setHeatmapColorOne({1.0, 0.1, 0.1});
+    //setHeatmapColorOne({149./256., 196./256., 234./256.});  1FBI
+
     #endif
 
     // Shows first cluster:

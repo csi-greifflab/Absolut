@@ -24,7 +24,7 @@ string mutateNPositions(string content, int nMut, string mask) {
    int success = 0;
    while(cpt < 25){
        char test = randomAA();
-       int position = random::uniformInteger(0,size-1);
+       size_t position = random::uniformInteger(0,size-1);
        if ((position >= size) || (position < 0)) {
           cerr << "Random does shit, sequencespace.cpp::mutateOnePosition";
           return content; // fail

@@ -224,7 +224,7 @@ superProtein::superProtein(string absoluteSequence, int initialPos) {
 
 // creates points from the structure to the list of residues points[]
 void superProtein::createPoints(){
-    if(structure == NULL) {cerr << "superProtein::createPoints, structure = NULL" << endl; return;}
+    if(structure == nullptr) {cerr << "superProtein::createPoints, structure = NULL" << endl; return;}
     int cptIDresidue = 0;
     points.clear();
     points.push_back(residue(structure->startingPosition, cptIDresidue));
@@ -443,7 +443,7 @@ string print(superProtein &P){
 
 //// Here, use lattice functions, and remove -Width from here
 bool excludeCriterion(superProtein* toCheck){
-    if(toCheck == NULL) return true;
+    if(toCheck == nullptr) return true;
 
     for(int i = 0; i < toCheck->size(); ++i){
         int IDcoord = toCheck->operator [](i).IDposition;
@@ -719,7 +719,7 @@ void testProteins(){
     #ifdef ALLOW_GRAPHICS
     if(false){
         cout << "Test copy and pushBackAbsoluteMove" << endl;
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
 
         struct3D* a = new struct3D(string("DDLUSRSLDURLSLL"), Left, lattice::centralPosition());
@@ -753,7 +753,7 @@ void testProteins(){
     cout << "\n     into " << b->sequence << ", with ABS " << b->separatedSingleMoves << " from pos " << printVector(lattice::positionFromID(endPos)) << endl;
     #ifdef ALLOW_GRAPHICS
     if(true){
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
         addToDisplay(a, false); // need to be a new XXX to be still existing after the function ends.
         addToDisplay(b, false); // need to be a new XXX to be still existing after the function ends.
@@ -826,7 +826,7 @@ void testProteins(){
 
     #ifdef ALLOW_GRAPHICS
     if(true){
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
         addToDisplay(s4); // need to be a new XXX to be still existing after the function ends.
         addToDisplay(s5); // need to be a new XXX to be still existing after the function ends.
@@ -963,7 +963,7 @@ void testEnsProts() {
 
     #ifdef ALLOW_GRAPHICS
     if(false){
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
         for(int i = 0; i < min(10000, P.size()); ++i){
             addToDisplay(P[i], false); // need to be a new XXX to be still existing after the function ends.

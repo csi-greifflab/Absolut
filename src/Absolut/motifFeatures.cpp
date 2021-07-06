@@ -411,7 +411,7 @@ std::pair<string , string> minimalFeaturesDegreeOne(superProtein& ligand, superP
 
 // actually we only need the features of the best folding, so it's OK.
 // This time, both
-//enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompoABParatope, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
+//enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompoABParatope, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, positionsBound, segmentedABParatope, segmentedAGEpitope, interMaskABParatope, interMaskAGEpitope, NB_features}; //nbneighbors, distChem, selfFolding,
 vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int minDegreeInteract, bool includeDegree){
     //minDegreeInteract = 1;
     //includeDegree = true;
@@ -424,6 +424,8 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     vector<int> AAcompRec(26,0);
     vector<bool> interactingPositionsLig(SL, false);
     vector<bool> interactingPositionsRec(S2L, false);
+    string interMaskLig = string(SL, '0');
+    string interMaskRec = string(S2L, '0');
     vector<int> degreesPositionsLig(SL, 0);
     vector<int> degreesPositionsRec(S2L, 0);
     stringstream interCodeID;
@@ -436,6 +438,8 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
         cerr << "! unfolded - ";
         return res;
     }
+
+    // 1- transforms the interaction code into two binary vectors (the interaction masks)
     for(size_t i = 0; i < SL; ++i){ // lig
         for(size_t j = 0; j < S2L; ++j){ // rec
             if(lattice::areNeighbors(ligand.points[i].IDposition, s2.points[j].IDposition)){
@@ -447,6 +451,8 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
                 // these 2 lines are useless because overwritten by degree just after the loops
                 interactingPositionsLig[i] = true;
                 interactingPositionsRec[j] = true;
+                interMaskLig[i] = (char) interMaskLig[i] + 1; // chars
+                interMaskRec[j] = (char) interMaskLig[j] + 1; // chars
                 degreesPositionsLig[i]++;
                 degreesPositionsRec[j]++;
 
@@ -471,38 +477,45 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     string motifGapLig;
     string motifGapSizLig;
     string aggrLig;
+    string segmentedLig;
     bool alreadyInGap = false;
     int gapsize = 0;
     for(size_t i = 0; i < SL; ++i){ // lig
         char AAlig = AAname(ligand[static_cast<int>(i)].TypeResidue);
+        string degreeSuffix = ((includeDegree) ? string(1, '1' + degreesPositionsLig[i] - 1) : string(""));
         if(interactingPositionsLig[i]){
-            alreadyInGap = false;
+            if(i == 0 || !interactingPositionsLig[i-1]) segmentedLig = segmentedLig + string("["); //end of gap,
+            alreadyInGap = false;   //end of gap, start of binding region
             if(gapsize > 0) motifGapSizLig = motifGapSizLig + fixedInt(gapsize, 3);
             gapsize = 0;
 
-            string degreeSuffix = ((includeDegree) ? string(1, '1' + degreesPositionsLig[i] - 1) : string(""));
+
             seqLig = seqLig + string(1, AAlig) + degreeSuffix;
+            segmentedLig = segmentedLig + string(1, AAlig) + degreeSuffix;
             motifLig = motifLig + string(1, 'X') + degreeSuffix;
             aggrLig = aggrLig + string(1, AAlig) + degreeSuffix;
-            motifGapSizLig = motifGapSizLig + string(1, AAlig);
+            motifGapSizLig = motifGapSizLig + string(1, 'X'); //string(1, AAlig);
             if(AAlig != '?'){
                 //cerr << AAlig << "+";
                 AAcompLig.at(static_cast<size_t>(AAlig - 'A'))++;
             }
         } else {
-            gapsize++;
-            if((!alreadyInGap) && (seqLig.size() > 0)){
+            gapsize++;  //extending gap
+            if((!alreadyInGap) && (seqLig.size() > 0)){ // start of a gap, ending of binding
                 motifLig = motifLig + string(1, '-');
                 aggrLig = aggrLig + string(1, '-');
                 if(includeDegree) { // makes it multiple of 2 if including degree
                     motifLig = motifLig + string(1, '-');
                     aggrLig = aggrLig + string(1, '-');
                 }
+                segmentedLig = segmentedLig + string("]");
             }
-            if(seqLig.size() > 0) alreadyInGap = true;
+            segmentedLig = segmentedLig + string(1, AAlig) + degreeSuffix;
+            if(seqLig.size() > 0) alreadyInGap = true; // start or continuation of gap
         }
     }
     // sometimes there is one or two '-'s at the end, removes them
+    if(!alreadyInGap) segmentedLig = segmentedLig + string("]");
     if(motifLig.back() == '-') motifLig = motifLig.substr(0, motifLig.size()-1);
     if(motifLig.back() == '-') motifLig = motifLig.substr(0, motifLig.size()-1);
     if(aggrLig.back() == '-') aggrLig = aggrLig.substr(0, aggrLig.size()-1);
@@ -513,20 +526,23 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     string motifRecLig;
     string motifGapSizRec;
     string aggrRec;
+    string segmentedRec;
     alreadyInGap = false;
     gapsize = 0;
     for(size_t j = 0; j < S2L; ++j){ // rec
         char AArec = AAname(s2[static_cast<int>(j)].TypeResidue);
+        string degreeSuffix = ((includeDegree) ? string(1, '1' + degreesPositionsRec[j] - 1) : string(""));
         if(interactingPositionsRec[j]){
+            if(j == 0 || !interactingPositionsRec[j-1]) segmentedRec = segmentedRec + string("["); //end of gap,
             alreadyInGap = false;
             if(gapsize > 0) motifGapSizRec = motifGapSizRec + fixedInt(gapsize, 3);
             gapsize = 0;
 
-            string degreeSuffix = ((includeDegree) ? string(1, '1' + degreesPositionsRec[j] - 1) : string(""));
             seqRec = seqRec + string(1, AArec) + degreeSuffix;
+            segmentedRec = segmentedRec + string(1, AArec) + degreeSuffix;
             motifRec = motifRec + string(1, 'X') + degreeSuffix;
             aggrRec = aggrRec + string(1, AArec) + degreeSuffix;
-            motifGapSizRec = motifGapSizRec + string(1, AArec);
+            motifGapSizRec = motifGapSizRec + string(1, 'X'); //+ string(1, AArec);
             //cerr << AArec << "-";
             if(AArec != '?'){
                 AAcompRec.at(static_cast<size_t>(AArec - 'A'))++;
@@ -541,22 +557,25 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
                     motifRec = motifRec + string(1, '-');
                     aggrRec = aggrRec + string(1, '-');
                 }
+                segmentedRec = segmentedRec + string("]");
             }
+            segmentedRec = segmentedRec + string(1, AArec) + degreeSuffix;
             if(seqRec.size() > 0) alreadyInGap = true;
         }
     }
+    if(!alreadyInGap) segmentedRec = segmentedRec + string("]");
     if(motifRec.back() == '-') motifRec = motifRec.substr(0, motifRec.size()-1);
     if(motifRec.back() == '-') motifRec = motifRec.substr(0, motifRec.size()-1);
     if(aggrRec.back() == '-') aggrRec = aggrRec.substr(0, aggrRec.size()-1);
     if(aggrRec.back() == '-') aggrRec = aggrRec.substr(0, aggrRec.size()-1);
 
-        stringstream posBound;
-        for(size_t i = 0; i < SL; ++i){ // lig
-            int IDposInLigand = ligand[static_cast<int>(i)].IDresidue;
-            if(interactingPositionsLig[i]){
-                posBound << IDposInLigand << " ";
-            }
+    stringstream posBound;
+    for(size_t i = 0; i < SL; ++i){ // lig
+        int IDposInLigand = ligand[static_cast<int>(i)].IDresidue;
+        if(interactingPositionsLig[i]){
+            posBound << IDposInLigand << " ";
         }
+    }
 
 //    int selffolding = 0;
 //    for(size_t i = 0; i < S2L; ++i){
@@ -587,7 +606,10 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     res[AAcompoABParatope] = codeAAcompo(AAcompRec);
     res[AAcompoFullSlice] = convertAAtoAAusage(s2.getAAseq(), '_');
     res[AAcompoFullCDR] = "UnknownYet-Compute outside structural features please";
-
+    res[interMaskAGEpitope] = interMaskLig;
+    res[interMaskABParatope] = interMaskRec;
+    res[segmentedAGEpitope] = segmentedLig;
+    res[segmentedABParatope] = segmentedRec;
     return res;
 }
 
@@ -616,14 +638,14 @@ features::features(string _antigenID, int _minDegree, int _includeDegreeInMotifs
 }
 
 string features::titleFeatures(){
-     return string("seqAGEpitope\tseqABParatope\tmotifAGEpitope\tmotifABParatope\tagregatesAGEpitope\tagregatesABParatope\tchemicalAGEpitope\tchemicalABParatope\tAAcompoFullSlice\tAAcompoFullCDR\tsizeCDR3"); // \thotspot_ID");
+     return string("seqAGEpitope\tseqABParatope\tmotifAGEpitope\tmotifABParatope\tagregatesAGEpitope\tagregatesABParatope\tchemicalAGEpitope\tchemicalABParatope\tmotifsSizeGapsLigand\tmotifsSizeGapsRec\tinterMaskAGEpitope\tinterMaskABParatope\tsegmentedAGEpitope\tsegmentedABParatope\tAAcompoFullSlice\tAAcompoFullCDR\tsizeCDR3"); // \thotspot_ID");
 }
 
 string features::printLine(vector<string> res){
     //enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompo , positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
     stringstream res2;
 
-    res2 << res[seqAGEpitope] << "\t" << res[seqABParatope] << "\t" << res[motifAGEpitope] << "\t" << res[motifABParatope] << "\t" << res[agregatesAGEpitope] << "\t" << res[agregatesABParatope] << "\t" << res[chemicalAGEpitope] << "\t" << res[chemicalABParatope] << "\t" << res[AAcompoFullSlice] << "\t" << res[AAcompoFullCDR] << "\t" << res[sizeCDR3]; // << "\t" << res[hotspot_ID];
+    res2 << res[seqAGEpitope] << "\t" << res[seqABParatope] << "\t" << res[motifAGEpitope] << "\t" << res[motifABParatope] << "\t" << res[agregatesAGEpitope] << "\t" << res[agregatesABParatope] << "\t" << res[chemicalAGEpitope] << "\t" << res[chemicalABParatope] << "\t" << res[motifsSizeGapsLigand] << "\t" << res[motifsSizeGapsRec] << "\t" << res[interMaskAGEpitope] << "\t" << res[interMaskABParatope] << "\t" << res[segmentedAGEpitope] << "\t" << res[segmentedABParatope] << "\t" << res[AAcompoFullSlice] << "\t" << res[AAcompoFullCDR] << "\t" << res[sizeCDR3]; // << "\t" << res[hotspot_ID];
     return res2.str();
 }
 
@@ -919,10 +941,10 @@ void list_dir(const char *path) {
    struct dirent *entry;
    DIR *dir = opendir(path);
 
-   if (dir == NULL) {
+   if (dir == nullptr) {
       return;
    }
-   while ((entry = readdir(dir)) != NULL) {
+   while ((entry = readdir(dir)) != nullptr) {
    cout << entry->d_name << endl;
    }
    closedir(dir);

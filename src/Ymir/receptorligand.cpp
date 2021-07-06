@@ -724,7 +724,7 @@ int reGenerateCompressedStructures(string fnameAllStructures, string newSequence
     fstr >> trash >> posLig >> strLig;
 
     superProtein* ligand; // still problems with deleting structures when copying a ligand => Prefer to use pointers
-    if(forceLigand == NULL){
+    if(forceLigand == nullptr){
         //struct3D ligand = struct3D(strLig, UnDefined, posLig);
         ligand = new superProtein(strLig, posLig);
         ligand->setAAs(newSequenceLigand);
@@ -965,7 +965,7 @@ void showStructures(string fileCompact, bool containsThirdColumn, int fromNr, in
     if(!f) {cerr << "File not found " << fileCompact << endl; return;}
 
     #ifdef ALLOW_GRAPHICS
-    char *c[] = {(char*)"Hello",NULL};
+    char *c[] = {(char*)"Hello",nullptr};
     glDisplay(0,c);
     #else
     cerr << "WRN: You are calling showStructures when ALLOW_GRAPHICS is not #defined, inside plot3d.h -> will just print to screen" << endl;
@@ -1072,7 +1072,7 @@ void testGenerateProteins(){
     //set<int>* s1 = new set<int>(neighborPositions(*lowB1));
 
     #ifdef ALLOW_GRAPHICS
-    char *c[] = {(char*)"Hello",NULL};
+    char *c[] = {(char*)"Hello",nullptr};
     glDisplay(0,c);
     /*addToDisplay(lowB1);
     addToDisplay(lowB2);
@@ -1273,12 +1273,12 @@ void testBigReceptorLigand(int sizeReceptor, int minimalNInteract, string struct
     #ifdef ALLOW_GRAPHICS
     if(true){
         cerr << "Now displaying the found structures " << endl;
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
         addToDisplay(merged);
         addToDisplay(ligand, true);
-        int NRs = a->possibleReceptors.size();
-        for(int i = 0; i < min(100000,NRs); ++i){
+        size_t NRs = a->possibleReceptors.size();
+        for(size_t i = 0; i < min(static_cast<size_t>(100000),NRs); ++i){
             if(!a->possibleReceptors[i]) {cerr << "WTF for recept " << i << endl; }
             else addToDisplay(a->possibleReceptors[i], false);
         }
@@ -1403,12 +1403,12 @@ void testFoldingStructures(){
     #ifdef ALLOW_GRAPHICS
     if(true){
         cerr << "Now displaying the found structures " << endl;
-        char *c[] = {(char*)"Hello",NULL};
+        char *c[] = {(char*)"Hello",nullptr};
         glDisplay(0,c);
         //addToDisplay(merged);
         //addToDisplay(ligand, true);
-        int NRs = res.size();
-        for(int i = 0; i < min(100000,NRs); ++i){
+        size_t NRs = res.size();
+        for(size_t i = 0; i < min(static_cast<size_t>(100000),NRs); ++i){
             if(!res[i]) {cerr << "WTF for recept " << i << endl; }
             else addToDisplay(res[i], false);
         }

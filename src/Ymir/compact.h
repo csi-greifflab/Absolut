@@ -287,6 +287,10 @@ string printVector(vector<double> v);
 string printVector(vector<size_t> v);
 string printVector(vector<string> v);
 int norm2(vector<int> toTest);
+int norm2(vector<int> v1, vector<int> v2);
+double norm2(vector<double> toTest);
+double norm2(vector<double> v1, vector<double> v2);
+
 set<int> stringToSet(string text, char sep = '\t');
 string setToString(set<int> mySet, char sep = ' ');
 bool isIncluded(set<int>& thisSet, set<int>& intoThatOne);

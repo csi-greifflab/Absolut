@@ -140,6 +140,7 @@ public:
 
     QStringList getChainsFromFasta();
     string getDiscretizedFileName();
+    void setnKeep(int newValue);
 
 public slots:
     void getPDB();

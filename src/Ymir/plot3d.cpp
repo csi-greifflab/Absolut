@@ -1,5 +1,5 @@
 #include "plot3d.h"
-
+#include <map> //for overlay of heatmaps
 /** See plot3d.h for infos:
  *  Displays structures, superProteins or positions in space as spheres.
  *  - use #define ALLOW_GRAPHICS in plot3d.h to use. The library freeglut is then needed. */
@@ -7,11 +7,13 @@
 #ifdef ALLOW_GRAPHICS
 #include "proteins.h"
 #include "lattice.h"
+#include "compact.h"
 #include "zaptrackball.h"
 #include "../Tools/zaprandom.h"
 #include <sstream>
 #include <iostream>
 #include <iomanip> // setprecision
+#include <fstream>
 using namespace std;
 
 void display();
@@ -37,8 +39,8 @@ static size_t IDheatmap = 0;
 static bool moving = 0;
 static int beginx, beginy;     // saves beginning position when clicked move
 static int W = 300, H = 300; // resizing needs to be done ...
-static float moveX = 0, moveY = 0, moveZ = 0;
-static float manualPointX = XWidth / 2, manualPointY = YWidth / 2, manualPointZ = ZWidth / 2;
+static double moveX = 0, moveY = 0, moveZ = 0;
+static double manualPointX = XWidth / 2, manualPointY = YWidth / 2, manualPointZ = ZWidth / 2;
 
 static float curquat[4];   // current quaternion
 static float lastquat[4];
@@ -46,18 +48,27 @@ static float lastquat[4];
 static GLdouble bodyWidth = 3.0;
 static bool newModel = 1;
 //static int scaling = 4; // 1
-static float scalefactor = 5; //1.0;
+static double scalefactor = 5; //1.0;
 static bool waitRightClick = false;
 static int indexStructDisplayed = -1;
 static double sizeSphere = 0.75; //0.2;
 static bool showAAColors = true; // false
 static bool showHeatmap = false;
+static bool visualizeInterface = false;
+//static vector<double> heatmapZeroColor = {0.1, 0.1, 0.1};
+//static vector<double> heatmapOneColor = {1.0, 0.7, 0.7};
+//static vector<double> heatmapCoreColor = {35./256., 220./256., 170./256.};
 static vector<double> heatmapZeroColor = {0.1, 0.1, 0.1};
-static vector<double> heatmapOneColor = {1.0, 0.7, 0.7};
+static vector<double> heatmapOneColor = {149./256., 196./256., 234./256.};
+static vector<double> heatmapCoreColor = {149./256., 196./256., 234./256.};
 //static vector<double> defaultProteinColor = {220./256., 38./256., 127./256.}; // Magenta
 // static vector<double> defaultProteinColor = {254./256., 97./256., 0./256.}; // Orange
 //static vector<double> defaultProteinColor = {255./256., 176./256., 0./256.}; // Gold
-static vector<double> defaultProteinColor = {1.0, 1.0, 1.0}; // Gold
+//static vector<double> defaultProteinColor = {241./256., 41./256., 138./256.}; // 1FBI
+//static vector<double> defaultProteinColor = {201./256., 148./256., 199./256.};  //1ADQ
+//static vector<double> defaultProteinColor = {206./256., 18./256., 86./256.};  //1H0D
+static vector<double> defaultProteinColor = {256./256., 256./256., 256./256.};  //1H0D
+
 
 static bool showAxis = false;
 static bool showForbPositions = true;
@@ -91,7 +102,7 @@ void recalcModelView(void){
     } else {
         glEnable(GL_NORMALIZE);
     }
-    glScalef(scalefactor, scalefactor, scalefactor);
+    glScaled(scalefactor, scalefactor, scalefactor);
     //glTranslatef(-8, -8, -bodyWidth / 2);
     newModel = 0;
 }
@@ -105,7 +116,7 @@ void myReshape(int w, int h){
 void mouse(int button, int state, int x, int y){
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         //spinning = 0;
-        glutIdleFunc(NULL);
+        glutIdleFunc(nullptr);
         moving = 1;
         beginx = x;
         beginy = y;
@@ -151,10 +162,10 @@ void motion(int x, int y)
   }*/
   if (moving) {
     trackball(lastquat,
-      (2.0 * beginx - W) / W,
-      (H - 2.0 * beginy) / H,
-      (2.0 * x - W) / W,
-      (H - 2.0 * y) / H
+      (static_cast<float>(2.0) * beginx - W) / W,
+      (H - static_cast<float>(2.0) * beginy) / H,
+      (static_cast<float>(2.0) * x - W) / W,
+      (H - static_cast<float>(2.0) * y) / H
       );
     beginx = x;
     beginy = y;
@@ -168,7 +179,7 @@ void motion(int x, int y)
   }
 }
 
-GLboolean lightZeroSwitch = GL_TRUE, lightOneSwitch = GL_TRUE;
+static GLboolean lightZeroSwitch = GL_TRUE, lightOneSwitch = GL_TRUE;
 
 void controlLights(int value){
     switch (value) {
@@ -202,7 +213,6 @@ void controlLights(int value){
         break;
     case 5:
         exit(0);
-        break;
     }
     glutPostRedisplay();
 }
@@ -221,18 +231,18 @@ void vis(int visible)
 void drawBitmapText(string s,float x,float y,float z){
     glRasterPos3f(x, y,z);
     for(unsigned int i = 0; i < s.size(); ++i)
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, (int) s[i]);
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, static_cast<int>(s[i]));
 }
 
 void drawBitmapText2D(string s,float x,float y){
     glRasterPos2f(x, y);
     for(unsigned int i = 0; i < s.size(); ++i)
-        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, (int) s[i]);
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, static_cast<int>(s[i]));
 }
 
 
 void SpecialInput(int key, int x, int y){
-    cout << "Special input " << key << endl;
+    cout << "Special input " << key << " x=" << x << " y=" << y << endl;
     switch(key){
     case GLUT_KEY_UP:
         moveY += 1.;
@@ -255,12 +265,12 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/){
     switch(key) {
         case 'q': case 'Q':
             indexStructDisplayed--;
-            if(indexStructDisplayed < -1) indexStructDisplayed = keepAlways.size() - 1;
+            if(indexStructDisplayed < -1) indexStructDisplayed = static_cast<int>(keepAlways.size()) - 1;
         break;
         case 'd': case 'D':
             indexStructDisplayed++;
             //cout << keepAlways.size() << endl;
-            if(indexStructDisplayed >= (int) keepAlways.size()) indexStructDisplayed = -1;
+            if(indexStructDisplayed >= static_cast<int>( keepAlways.size())) indexStructDisplayed = -1;
         break;
         case 'l':
             sizeSphere /= 1.2;
@@ -321,6 +331,10 @@ void keyboard(unsigned char key, int /*x*/, int /*y*/){
             saving = !saving;
             if(saving) cout << "... Saving images every time refreshed " << endl;
             else cout << "... Stopping saving images" << endl;
+        break;
+
+        case 'I': case 'i':
+            visualizeInterface = !visualizeInterface;
         break;
     case '+':
         scalefactor *= 1.08;
@@ -466,12 +480,12 @@ void addDissected(superProtein* new_s, moveDirection startDir, int startPos){
     if(!new_s) {cerr << "ERR: addDissected(NULL)" << endl; return;}
     if(!new_s->structure) {cerr << "ERR: addDissected(NULL structure)" << endl; return;}
     string S = new_s->structure->sequence;
-    int L = S.size();
+    size_t L = S.size();
     // Less than 2 moves doesn't need dissect
     if(L <= 2){
         addToDisplay(new_s, false);
     }
-    for(int i = 0; i < L; ++i){ //££tag
+    for(size_t i = 0; i < L; ++i){ //££tag
         superProtein* s2 = new superProtein(new_s->structure->sequence.substr(0,i+1), startPos);
         addToDisplay(s2, false);
     }
@@ -553,10 +567,10 @@ void display(){
     //when drawing something, give color first, then draw
     //f signifies float
     glLineWidth(3.0);
-    glColor4f(0.45, 0.0, 0.45, 1.0);
-    glColor4f(1, 1, 1, 1.0);
+    glColor4d(0.45, 0.0, 0.45, 1.0);
+    glColor4d(1, 1, 1, 1.0);
 
-    glTranslatef(moveX, moveY, moveZ);
+    glTranslated(moveX, moveY, moveZ);
 
     if(showAxis){
         // Borders of the cube
@@ -564,33 +578,33 @@ void display(){
             for(int iy = 0; iy <=1; ++iy){
                 for(int iz = 0; iz <=1; ++iz){
                     glBegin(GL_LINES);
-                    glVertex3f(XWidth * (ix-0.5) , YWidth * (iy-0.5) , -ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , - YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , - YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
-                    glVertex3f(- XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , YWidth * (iy-0.5) , -ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , - YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , - YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
+                    glVertex3d(- XWidth * (ix-0.5) , YWidth * (iy-0.5) , ZWidth * (iz-0.5) );
                     glEnd();
                 }
             }
         }
 
         // Axes
-        glColor4f(0.3, 0.3, 0.85, 1.0);
+        glColor4d(0.3, 0.3, 0.85, 1.0);
         for(int i = 0; i < XWidth ; ++i){
             glBegin(GL_LINES);
-            glVertex3f(i -0.1 - 0.5*XWidth, 0 , 0 );
-            glVertex3f(i + 0.1 - 0.5*XWidth, 0 , 0 );
+            glVertex3d(i -0.1 - 0.5*XWidth, 0 , 0 );
+            glVertex3d(i + 0.1 - 0.5*XWidth, 0 , 0 );
             glEnd();
             glBegin(GL_LINES);
-            glVertex3f(0,i - 0.1 - 0.5*YWidth, 0  );
-            glVertex3f(0,i + 0.1 - 0.5*YWidth, 0 );
+            glVertex3d(0,i - 0.1 - 0.5*YWidth, 0  );
+            glVertex3d(0,i + 0.1 - 0.5*YWidth, 0 );
             glEnd();
             glBegin(GL_LINES);
-            glVertex3f(0,0,i - 0.1  - 0.5*ZWidth);
-            glVertex3f(0,0,i + 0.1 - 0.5*ZWidth);
+            glVertex3d(0,0,i - 0.1  - 0.5*ZWidth);
+            glVertex3d(0,0,i + 0.1 - 0.5*ZWidth);
             glEnd();
         }
         drawBitmapText("X",XWidth / 2.0,0,0);
@@ -600,26 +614,26 @@ void display(){
 
     #define randomCoeff 0
     //#define sizeSphere 0.2
-    for(unsigned int is = 0; is < currentProts.size(); ++is){
-        if((indexStructDisplayed == -1) || (indexStructDisplayed == (int) is) || (keepAlways[is])){
+    for(size_t is = 0; is < currentProts.size(); ++is){
+        if((indexStructDisplayed == -1) || (indexStructDisplayed == static_cast<int> (is)) || (keepAlways[is])){
             superProtein* s = currentProts[is];
             if(s == nullptr) continue;
             stringstream tt;
             tt << "S="<< s->structure->sequence;
             drawBitmapText(tt.str().c_str(),-XWidth / 3.0, -YWidth/2.0 -is*5 , 0);
 
-            int nR = s->points.size();
+            size_t nR = s->points.size();
             vector<int> posPrec;
             vector<int> pos;
 
             if(keepAlways[is]){                      
-//              glColor4f(1.0, 1.0, 1.0, 1.0);
-                glColor4f(defaultProteinColor[0], defaultProteinColor[1], defaultProteinColor[2], 1.0);
+//              glColor4d(1.0, 1.0, 1.0, 1.0);
+                glColor4d(defaultProteinColor[0], defaultProteinColor[1], defaultProteinColor[2], 1.0);
             } else {
                 double dr = random::uniformDouble(0,1);
                 double dg = random::uniformDouble(0,1);
                 double db = random::uniformDouble(0,1);
-                glColor4f(dr, dg, db, 0.2);
+                glColor4d(dr, dg, db, 0.2);
             }
 
             double dx1 = random::uniformDouble(0,randomCoeff*0.2);
@@ -632,45 +646,45 @@ void display(){
                 if(showAAColors){
                    // Amino acid colors rasmol
 //                    switch(s->points[i].TypeResidue){
-//                        case Asp: case Glu:             glColor4f(230./255.,230./255., 10./255.,1.0); break;
-//                        case Cys: case Met:             glColor4f(230./255.,230./255.,  0./255.,1.0); break;
-//                        case Arg: case Lys:             glColor4f( 20./255., 90./255.,255./255.,1.0); break;
-//                        case Thr: case Ser:             glColor4f(250./255.,150./255.,  0./255.,1.0); break;
-//                        case Tyr: case Phe:             glColor4f( 50./255., 50./255.,170./255.,1.0); break;
-//                        case Asn: case Gln:             glColor4f(  0./255.,220./255.,220./255.,1.0); break;
-//                        case Gly:                       glColor4f(235./255.,235./255.,235./255.,1.0); break;
-//                        case Ile: case Leu: case Val:   glColor4f( 15./255.,130./255., 15./255.,1.0); break;
-//                        case Ala :                      glColor4f(200./255.,200./255.,200./255.,1.0); break;
-//                        case Trp:                       glColor4f(180./255., 90./255.,180./255.,1.0); break;
-//                        case His:                       glColor4f(130./255.,130./255.,210./255.,1.0); break;
-//                        case Pro:                       glColor4f(220./255.,150./255.,130./255.,1.0); break;
-//                        case UndefinedYet:              glColor4f(0.1, 0.1, 0.1, 1.0); break;
-//                        case NB_AAs:                    glColor4f(0.05, 0.05, 0.05, 1.0); break;
+//                        case Asp: case Glu:             glColor4d(230./255.,230./255., 10./255.,1.0); break;
+//                        case Cys: case Met:             glColor4d(230./255.,230./255.,  0./255.,1.0); break;
+//                        case Arg: case Lys:             glColor4d( 20./255., 90./255.,255./255.,1.0); break;
+//                        case Thr: case Ser:             glColor4d(250./255.,150./255.,  0./255.,1.0); break;
+//                        case Tyr: case Phe:             glColor4d( 50./255., 50./255.,170./255.,1.0); break;
+//                        case Asn: case Gln:             glColor4d(  0./255.,220./255.,220./255.,1.0); break;
+//                        case Gly:                       glColor4d(235./255.,235./255.,235./255.,1.0); break;
+//                        case Ile: case Leu: case Val:   glColor4d( 15./255.,130./255., 15./255.,1.0); break;
+//                        case Ala :                      glColor4d(200./255.,200./255.,200./255.,1.0); break;
+//                        case Trp:                       glColor4d(180./255., 90./255.,180./255.,1.0); break;
+//                        case His:                       glColor4d(130./255.,130./255.,210./255.,1.0); break;
+//                        case Pro:                       glColor4d(220./255.,150./255.,130./255.,1.0); break;
+//                        case UndefinedYet:              glColor4d(0.1, 0.1, 0.1, 1.0); break;
+//                        case NB_AAs:                    glColor4d(0.05, 0.05, 0.05, 1.0); break;
 //                    }
                     // shapely colors rasmol
                     switch(s->points[i].TypeResidue){
-                        case Ala:             glColor4f(140./255.,  255./255.,   140./255.,1.0); break;
-                        case Gly:             glColor4f(255./255.,  255./255.,   255./255.,1.0); break;
-                        case Leu:             glColor4f( 69./255.,   64./255.,    69./255.,1.0); break;
-                        case Ser:             glColor4f(255./255.,  112./255.,    66./255.,1.0); break;
-                        case Val:             glColor4f(255./255.,  140./255.,   255./255.,1.0); break;
-                        case Thr:             glColor4f(184./255.,   76./255.,     0./255.,1.0); break;
-                        case Lys:             glColor4f( 71./255.,   71./255.,   184./255.,1.0); break;
-                        case Asp:             glColor4f(160./255.,    0./255.,   166./255.,1.0); break;
-                        case Ile:             glColor4f(  0./255.,   76./255.,     0./255.,1.0); break;
-                        case Asn:             glColor4f(255./255.,  124./255.,   112./255.,1.0); break;
-                        case Glu:             glColor4f(102./255.,    0./255.,     0./255.,1.0); break;
-                        case Pro:             glColor4f( 82./255.,   82./255.,    82./255.,1.0); break;
-                        case Arg:             glColor4f(  0./255.,    0./255.,   124./255.,1.0); break;
-                        case Phe:             glColor4f( 83./255.,   76./255.,    66./255.,1.0); break;
-                        case Gln:             glColor4f(255./255.,   76./255.,    76./255.,1.0); break;
-                        case Tyr:             glColor4f(140./255.,  112./255.,    76./255.,1.0); break;
-                        case His:             glColor4f(112./255.,  112./255.,   255./255.,1.0); break;
-                        case Cys:             glColor4f(255./255.,  255./255.,   112./255.,1.0); break;
-                        case Met:             glColor4f(184./255.,   160./255.,   66./255.,1.0); break;
-                        case Trp:             glColor4f( 79./255.,    70./255.,    0./255.,1.0); break;
-                        case UndefinedYet:    glColor4f(0.1, 0.1, 0.1, 1.0); break;
-                        case NB_AAs:          glColor4f(0.05, 0.05, 0.05, 1.0); break;
+                        case Ala:             glColor4d(140./255.,  255./255.,   140./255.,1.0); break;
+                        case Gly:             glColor4d(255./255.,  255./255.,   255./255.,1.0); break;
+                        case Leu:             glColor4d( 69./255.,   64./255.,    69./255.,1.0); break;
+                        case Ser:             glColor4d(255./255.,  112./255.,    66./255.,1.0); break;
+                        case Val:             glColor4d(255./255.,  140./255.,   255./255.,1.0); break;
+                        case Thr:             glColor4d(184./255.,   76./255.,     0./255.,1.0); break;
+                        case Lys:             glColor4d( 71./255.,   71./255.,   184./255.,1.0); break;
+                        case Asp:             glColor4d(160./255.,    0./255.,   166./255.,1.0); break;
+                        case Ile:             glColor4d(  0./255.,   76./255.,     0./255.,1.0); break;
+                        case Asn:             glColor4d(255./255.,  124./255.,   112./255.,1.0); break;
+                        case Glu:             glColor4d(102./255.,    0./255.,     0./255.,1.0); break;
+                        case Pro:             glColor4d( 82./255.,   82./255.,    82./255.,1.0); break;
+                        case Arg:             glColor4d(  0./255.,    0./255.,   124./255.,1.0); break;
+                        case Phe:             glColor4d( 83./255.,   76./255.,    66./255.,1.0); break;
+                        case Gln:             glColor4d(255./255.,   76./255.,    76./255.,1.0); break;
+                        case Tyr:             glColor4d(140./255.,  112./255.,    76./255.,1.0); break;
+                        case His:             glColor4d(112./255.,  112./255.,   255./255.,1.0); break;
+                        case Cys:             glColor4d(255./255.,  255./255.,   112./255.,1.0); break;
+                        case Met:             glColor4d(184./255.,   160./255.,   66./255.,1.0); break;
+                        case Trp:             glColor4d( 79./255.,    70./255.,    0./255.,1.0); break;
+                        case UndefinedYet:    glColor4d(0.1, 0.1, 0.1, 1.0); break;
+                        case NB_AAs:          glColor4d(0.05, 0.05, 0.05, 1.0); break;
                     }
                 }
                 //GLfloat d1[] = { 0.1, 0.4, 0.9, 1.0 };
@@ -682,54 +696,121 @@ void display(){
 
 
 //                    if( i < 2) // first 2 positions are different
-//                        glColor4f(0.8, 1.0, 0.8, 1.0);
+//                        glColor4d(0.8, 1.0, 0.8, 1.0);
 //                    else
-//                        glColor4f(1.0, 0.3, 0.3, 1.0);
+//                        glColor4d(1.0, 0.3, 0.3, 1.0);
 
-                glTranslatef(dx1 + pos[0] - XWidth / 2., dy1 + pos[1] -YWidth / 2., dz1 + pos[2] - ZWidth / 2.);
+                glTranslated(dx1 + pos[0] - XWidth / 2., dy1 + pos[1] -YWidth / 2., dz1 + pos[2] - ZWidth / 2.);
                 glutSolidSphere(sizeSphere, 50, 50);
-                glTranslatef(-dx1 -pos[0] + XWidth / 2., -dy1 -pos[1] +YWidth / 2., -dz1 -pos[2] + ZWidth / 2.);
+                glTranslated(-dx1 -pos[0] + XWidth / 2., -dy1 -pos[1] +YWidth / 2., -dz1 -pos[2] + ZWidth / 2.);
                 if(i > 0){
                     glBegin(GL_LINES);
-                    glVertex3f(dx1 + posPrec[0] - XWidth / 2.,dy1 + posPrec[1] -YWidth / 2., dz1 + posPrec[2] - ZWidth / 2.);
-                    glVertex3f(dx1 + pos[0] - XWidth / 2., dy1 + pos[1] -YWidth / 2., dz1 +pos[2] - ZWidth / 2.);
+                    glVertex3d(dx1 + posPrec[0] - XWidth / 2.,dy1 + posPrec[1] -YWidth / 2., dz1 + posPrec[2] - ZWidth / 2.);
+                    glVertex3d(dx1 + pos[0] - XWidth / 2., dy1 + pos[1] -YWidth / 2., dz1 +pos[2] - ZWidth / 2.);
                     glEnd();
                 }
             }
         }
     }
+
+    // I define the map here to share it with the surfaces (next block)
+    std::map<int, double> maxIntensityPerPoint;
     if(showHeatmap && (currentHeatmap.size() > 0)){
         if((IDheatmap < 0) || (IDheatmap >= currentHeatmap.size() + 1)){
             cerr << "ERR: Out of bounds IDheatmap" << endl;
         } else {
+
             for(size_t ID = 0; ID < currentHeatmap.size(); ++ID){
                 if((ID == IDheatmap) || (IDheatmap == currentHeatmap.size())){
                     if(currentHeatmap[ID]){
                         size_t nH = currentHeatmap[ID]->size();
                         for(size_t i = 0; i < nH; ++i){
-                            vector<int> pos = lattice::positionFromID((*currentHeatmap[ID])[i].first);
-                            //cout << "show heat " << currentHeatmap[i].first << endl;
-                            //cout << currentHeatmap[i].first << ":" << pos[0] << "," << pos[1] << "," << pos[2] << endl;
+                            int thisPosition = (*currentHeatmap[ID])[i].first;
                             double intensity = (*currentHeatmap[ID])[i].second;
-                            glColor4f(heatmapZeroColor[0] + intensity * heatmapOneColor[0], heatmapZeroColor[1] + intensity * heatmapOneColor[1], heatmapZeroColor[2] + intensity * heatmapOneColor[2], 0.2);
-
-                            //if(intensity > 0.999) glColor4f(0.2, 1.0, 0.2, 0.2);
-                            if(intensity > 0.999) glColor4f(35./256., 220./256., 170./256., 0.2);
-                            glTranslatef(pos[0] - XWidth / 2., pos[1] -YWidth / 2., pos[2] - ZWidth / 2.);
-                            glutSolidSphere(1.05*sizeSphere, 50, 50);
-                            glTranslatef( -pos[0] + XWidth / 2.,  -pos[1] +YWidth / 2.,  -pos[2] + ZWidth / 2.);
+                            if(maxIntensityPerPoint.find(thisPosition) != maxIntensityPerPoint.end()){
+                                intensity = max(maxIntensityPerPoint[thisPosition], intensity);
+                                maxIntensityPerPoint[thisPosition] = intensity;
+                            } else {
+                                maxIntensityPerPoint[thisPosition] = intensity;
+                            }
                         }
                     }
                 }
             }
+            for(std::map<int, double>::iterator it = maxIntensityPerPoint.begin(); it != maxIntensityPerPoint.end(); ++it){
+                vector<int> pos = lattice::positionFromID(it->first);
+                double intensity = it->second;
+                glColor4d(heatmapZeroColor[0] + intensity * heatmapOneColor[0], heatmapZeroColor[1] + intensity * heatmapOneColor[1], heatmapZeroColor[2] + intensity * heatmapOneColor[2], 0.2);
+
+                //if(intensity > 0.999) glColor4d(0.2, 1.0, 0.2, 0.2);
+                if(intensity > 0.999) glColor4d(heatmapCoreColor[0], heatmapCoreColor[1], heatmapCoreColor[2], 1.0);
+                glTranslated(pos[0] - XWidth / 2., pos[1] -YWidth / 2., pos[2] - ZWidth / 2.);
+                glutSolidSphere(1.05*sizeSphere, 50, 50);
+                glTranslated( -pos[0] + XWidth / 2.,  -pos[1] +YWidth / 2.,  -pos[2] + ZWidth / 2.);
+
+            }
         }
     }
+
+    int cptTouchCore = 0;
+    int cptTouchHotspot = 0;
+    if(visualizeInterface){
+        std::map<int ,double> DistribDistancesAnyHeatmap;
+        std::map<int ,double> DistribDistances100pctHeatmap;
+        for(unsigned int is = 0; is < currentPoints.size(); ++is){
+            vector<double> posC = currentPoints[is];
+
+            double distanceSquareAnyHeatmap = 1000000;
+            double distanceSquare100pctHeatmap = 1000000;
+            // finds the closest hotspot point
+            for(std::map<int, double>::iterator it = maxIntensityPerPoint.begin(); it != maxIntensityPerPoint.end(); ++it){
+                vector<int> posH = lattice::positionFromID(it->first);
+                vector<double> posHD = {static_cast<double>(posH[0]) - XWidth / 2., static_cast<double>(posH[1])- YWidth / 2., static_cast<double>(posH[2]) - ZWidth / 2.};
+                double intensity = it->second;
+                //cout << printVector(posC) << "\t" << printVector(posHD) << "\t" << sqrt(norm2(posC, posHD)) << "\n";
+                distanceSquareAnyHeatmap = min(distanceSquareAnyHeatmap,sqrt(norm2(posC, posHD)));
+                if(intensity > 0.999) distanceSquare100pctHeatmap = min(distanceSquare100pctHeatmap, sqrt(norm2(posC, posHD)));
+            }
+            if(DistribDistancesAnyHeatmap.find(floor(5*distanceSquareAnyHeatmap)) == DistribDistancesAnyHeatmap.end()){
+                DistribDistancesAnyHeatmap[floor(5*distanceSquareAnyHeatmap)] = 0;
+            }
+            if(DistribDistances100pctHeatmap.find(floor(5*distanceSquare100pctHeatmap)) == DistribDistancesAnyHeatmap.end()){
+                DistribDistances100pctHeatmap[floor(5*distanceSquare100pctHeatmap)] = 0;
+            }
+            DistribDistancesAnyHeatmap[floor(5*distanceSquareAnyHeatmap)] += 1;
+            DistribDistances100pctHeatmap[floor(5*distanceSquare100pctHeatmap)] += 1;
+
+            if(distanceSquareAnyHeatmap <= 1.5) {
+                glColor4d(0.3, 0.5, 0.2, 1.0);
+                if(distanceSquare100pctHeatmap <= 1.5) {
+                    cptTouchCore++;
+                    glColor4d(0.8, 0.8, 0.3, 1.0);
+                } else {
+                    cptTouchHotspot++;
+                }
+                glTranslated(posC[0], posC[1], posC[2]);
+                glutSolidSphere(0.3, 50, 50);
+                glTranslated(-posC[0], -posC[1], -posC[2]);
+            }
+        }
+        cout << "For the displayed heatmaps, the minimal distances to any heatmap are" << endl;
+        for(std::map<int, double>::iterator it = DistribDistancesAnyHeatmap.begin(); it != DistribDistancesAnyHeatmap.end(); ++it){
+            cout << it->first/5. << "\t" << it->second << "\t[" << it->first/5. << "," << (it->first + 1) / 5. << "[\n";
+        }
+        cout << "For the displayed heatmaps, the minimal distances to heatmap CORES are" << endl;
+        for(std::map<int, double>::iterator it = DistribDistances100pctHeatmap.begin(); it != DistribDistances100pctHeatmap.end(); ++it){
+            cout << it->first/5. << "\t" << it->second << "\t[" << it->first/5. << "," << (it->first + 1) /5. << "[\n";
+        }
+        cout << endl;
+    }
+
+
     #define sizeSphereSurface 0.12
 
     if(showForbPositions){
         for(unsigned int is = 0; is < currentSurfaces.size(); ++is){
             set<int>* srf = currentSurfaces[is];
-            if(srf == NULL) continue;
+            if(srf == nullptr) continue;
 
             //stringstream tt;
             //tt << "S="<< s->sequence;
@@ -742,16 +823,18 @@ void display(){
                 //glMaterialfv(GL_FRONT,GL_DIFFUSE,d1);
                 //glEnable(GL_COLOR_MATERIAL);
                 //glColor3f(0.1, 0.4, 0.9);
-                glColor4f(0.5, 1.0, 0.3, 1.0);
-                glTranslatef(pos[0] - XWidth / 2., pos[1] -YWidth / 2., pos[2] - ZWidth / 2.);
+                glColor4d(0.5, 1.0, 0.3, 1.0);
+                glTranslated(pos[0] - XWidth / 2., pos[1] -YWidth / 2., pos[2] - ZWidth / 2.);
                 glutSolidSphere(sizeSphereSurface, 50, 50);
-                glTranslatef(-pos[0] + XWidth / 2., -pos[1] +YWidth / 2., -pos[2] + ZWidth / 2.);
+                glTranslated(-pos[0] + XWidth / 2., -pos[1] +YWidth / 2., -pos[2] + ZWidth / 2.);
             }
         }
-        glColor4f(0.6, 0.9, 0.4, 1.0);
-        glTranslatef(manualPointX - XWidth / 2., manualPointY -YWidth / 2., manualPointZ - ZWidth / 2.);
+
+
+        glColor4d(0.6, 0.9, 0.4, 1.0);
+        glTranslated(manualPointX - XWidth / 2., manualPointY -YWidth / 2., manualPointZ - ZWidth / 2.);
         glutSolidSphere(sizeSphereSurface, 50, 50);
-        glTranslatef(-manualPointX + XWidth / 2., -manualPointY +YWidth / 2., -manualPointZ + ZWidth / 2.);
+        glTranslated(-manualPointX + XWidth / 2., -manualPointY +YWidth / 2., -manualPointZ + ZWidth / 2.);
 
         for(unsigned int is = 0; is < currentPoints.size(); ++is){
             vector<double> pos = currentPoints[is];
@@ -765,15 +848,15 @@ void display(){
 
             // Possibility to use NANs to not have lines
             if(!isnan(pos[0])){
-                glColor4f(0.5, 1.0, 0.3, 1.0);
-                glTranslatef(pos[0] , pos[1] , pos[2] );
+                glColor4d(0.5, 1.0, 0.3, 1.0);
+                glTranslated(pos[0] , pos[1] , pos[2] );
                 glutSolidSphere(sizeSphereSurface, 50, 50);
-                glTranslatef(-pos[0] , -pos[1] , -pos[2] );
+                glTranslated(-pos[0] , -pos[1] , -pos[2] );
 
                 if((is > 0) && (!isnan(currentPoints[is-1][0]))){
                     glBegin(GL_LINES);
-                    glVertex3f(currentPoints[is-1][0], currentPoints[is-1][1], currentPoints[is-1][2]);
-                    glVertex3f(pos[0], pos[1], pos[2]);
+                    glVertex3d(currentPoints[is-1][0], currentPoints[is-1][1], currentPoints[is-1][2]);
+                    glVertex3d(pos[0], pos[1], pos[2]);
                     glEnd();
                 }
             }
@@ -781,7 +864,7 @@ void display(){
         }
     }
 
-    glTranslatef(-moveX, -moveY, -moveZ);
+    glTranslated(-moveX, -moveY, -moveZ);
 
     //This is to say display everything now
     //glFlush();        // in the single buffer mode
@@ -799,7 +882,15 @@ void display(){
         cpt ++;
         stringstream newFile;
         newFile << PictureFileNamePrefix << "H=" << IDheatmap << "S=" << indexStructDisplayed << "im" <<  cpt << ".bmp";
-        int err = SOIL_save_image(newFile.str().c_str(), SOIL_SAVE_TYPE_BMP, w, h, 3, &buf[0]);
+        //int err =
+        SOIL_save_image(newFile.str().c_str(), SOIL_SAVE_TYPE_BMP, w, h, 3, &buf[0]);
+
+        if(visualizeInterface){
+            ofstream f_wr("info_interaction.txt", ios::app);
+            f_wr << PictureFileNamePrefix << "\t" << IDheatmap << "\t" << cptTouchCore << "\t" << cptTouchHotspot << "\n";
+            f_wr.close();
+        }
+        saving = false;
     }
 }
 
@@ -833,7 +924,8 @@ void savePicture(string fileName){
 //      buf2[x * w + y] = buf[x * w + (h-y)];
 //     }
 //    }
-    int err = SOIL_save_image(fileName.c_str(), SOIL_SAVE_TYPE_BMP, w, h, 3, &buf[0]);
+    //int err =
+    SOIL_save_image(fileName.c_str(), SOIL_SAVE_TYPE_BMP, w, h, 3, &buf[0]);
 }
 
 

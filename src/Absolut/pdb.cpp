@@ -453,6 +453,11 @@ PDB::~PDB()
 string PDB::getDiscretizedFileName(){
     return ui->lineEditFileOutputLatfit->text().toStdString();
 }
+
+void PDB::setnKeep(int newValue){
+    ui->spinBoxnKeep->setValue(newValue);
+}
+
 void PDB::getPDB(){
     PDB_ID = ui->lineEditPDB_ID->text().toStdString();
     ui->comboBoxListChains->clear();

@@ -1,0 +1,144 @@
+```{r}
+library(dplyr)
+library(ggplot2)
+```
+
+
+```{r}
+#prefix = ""
+#prefix = "aMvsL"
+prefix = "bHvsM"
+```
+
+
+```{r}
+folder = "D:/pprobert/Datasets/Task1AllAGs/"
+folderAnalyses = "D:/pprobert/Datasets/AnalyzedV3/"
+
+#This is the final nonredundant selection of antigens, n=142
+lib <- c("1ADQ_A", "1FBI_X", "1FNS_A", "1FSK_A", "1H0D_C", "1JPS_T", "1KB5_AB", "1NCB_N", "1NSN_S", "1OAZ_A", "1OB1_C", "1OSP_O", "1PKQ_J", "1QFW_AB", "1RJL_C", "1S78_B", "1TQB_A", "1WEJ_F", "1YJD_C", "1ZTX_E", "2ARJ_RQ", "2B2X_A", "2FD6_AU", "2HFG_R", "2IH3_C", "2JEL_P", "2Q8A_A", "2R29_A", "2R4R_A", "2R56_A", "2UZI_R", "2VXQ_A", "2VXT_I", "2W9E_A", "2WUC_I", "2XQB_A", "2XWT_C", "2YC1_C", "2YPV_A", "2ZCH_P", "3BGF_S", "3BN9_A", "3CVH_ABC", "3DVG_XY", "3EFD_K", "3GI9_C", "3HI6_A", "3JBQ_B", "3KJ4_A", "3KR3_D", "3KS0_J", "3L5X_A", "3L95_X", "3MJ9_A", "3NCY_A", "3NFP_I", "3NH7_A", "3Q3G_E", "3R08_E", "3R1G_B", "3RAJ_A", "3RKD_A", "3RVV_A", "3SKJ_E", "3SQO_A", "3TT1_A", "3U9P_C", "3UBX_A", "3V6O_A", "3VG9_A", "3VRL_C", "3WD5_A", "4AEI_A", "4CAD_C", "4DKE_A", "4H88_A", "4HC1_B", "4HJ0_B", "4I18_R", "4I77_Z", "4K24_A", "4K3J_A", "4K9E_C", "4KI5_M", "4KXZ_A", "4LU5_B", "4MXV_B", "4N9G_C", "4NP4_A", "4OII_A", "4OKV_E", "4PP1_A", "4QCI_D", "4QEX_A", "4QNP_A", "4QWW_A", "4R9Y_D", "4RGM_S", "4U1G_A", "4U6V_A", "4WV1_F", "4Y5V_C", "4YPG_C", "4YUE_C", "4ZFG_A", "4ZFO_F", "4ZSO_E", "5B8C_C", "5BVP_I", "5C0N_A", "5C7X_A", "5CZV_A", "5D93_A", "5DFV_A", "5DHV_M", "5DMI_A", "5DO2_B", "5E8D_A", "5E8E_LH", "5E94_G", "5EII_G", "5EPM_C", "5EU7_A", "5EZO_A", "5F3B_C", "5FB8_C", "5H35_C", "5HDQ_A", "5HI4_B", "5IKC_M", "5J13_A", "5JW4_A", "5JZ7_A", "5KN5_C", "5KTE_A", "5L0Q_A", "5LQB_A", "5MES_A", "5T5F_A", "5TH9_A", "5TLJ_X", "5TZ2_C");
+length(lib)
+```
+
+# Part 1 : does the job on slices data 
+
+#Here, each file says binder or non binder
+#Now I add a column class where it will say "AntigenID" or "Nonbinder". Both columns will be
+```{r}
+df <- NULL
+for(antigenID in lib){
+    print(antigenID)
+    fileBalanced <- paste(folder, antigenID, "_Task1",prefix,"_SlicesBalancedData.txt", sep="")
+    a <- read.table(fileBalanced, header=TRUE)
+    b <- a %>% mutate(Class = ifelse(Label == "Binder", antigenID, Label))
+    df <- rbind(df, b)
+}
+df
+```
+
+
+
+
+
+```{r}
+print(paste("Full Database task 2", prefix, " has", length(df$Slide), "sequences"))
+print(paste("Full Database task 2", prefix, " has", length(unique(df$Slide)), "sequences"))
+
+```
+
+
+
+
+
+
+
+```{r}
+groupedDfForOutput <- df %>% group_by(Slide, Label) %>% mutate(Duplicates = n(), nDiffAntigens = n_distinct(Class)) %>% arrange(Slide) %>% select(Slide, Label, Duplicates,  nDiffAntigens, Class)
+groupedDfForOutput
+```
+
+
+```{r}
+write.table(groupedDfForOutput, paste("Task2", prefix, "Annotated.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
+```
+
+
+
+
+
+```{r}
+groupedDf <- df %>% group_by(Slide, Label) %>% mutate(Duplicates = n(), nDiffAntigens = n_distinct(Class)) %>% slice(1) %>% arrange(Slide) %>% select(Slide, Label, Duplicates,  nDiffAntigens, Class)
+groupedDf
+```
+
+```{r}
+forSaving <- groupedDf %>% filter(Label=="Binder")
+```
+
+```{r}
+write.table(forSaving, paste("Task2", prefix, "BindAtLeastOne.txt", sep=""), quote=FALSE, sep="\t", row.names=FALSE) 
+```
+
+
+
+
+# Part 2 : same job on CDR3 data 
+
+
+
+#Here, each file says binder or non binder
+#Now I add a column class where it will say "AntigenID" or "Nonbinder". Both columns will be
+```{r}
+df <- NULL
+for(antigenID in lib){
+    print(antigenID)
+    fileBalanced <- paste(folder, antigenID, "_Task1",prefix,"_BalancedData.txt", sep="")
+    a <- read.table(fileBalanced, header=TRUE)
+    b <- a %>% mutate(Class = ifelse(Label == "Binder", antigenID, Label))
+    df <- rbind(df, b)
+}
+df
+```
+
+
+
+
+
+```{r}
+print(paste("Full Database task 2", prefix, " has", length(df$CDR3), "sequences"))
+print(paste("Full Database task 2", prefix, " has", length(unique(df$CDR3)), "sequences"))
+
+```
+
+
+
+
+
+
+
+```{r}
+groupedDfForOutput <- df %>% group_by(CDR3, Label) %>% mutate(Duplicates = n(), nDiffAntigens = n_distinct(Class)) %>% arrange(CDR3) %>% select(CDR3, Label, Duplicates,  nDiffAntigens, Class)
+groupedDfForOutput
+```
+
+
+```{r}
+write.table(groupedDfForOutput, paste("Task2", prefix, "CDR3Annotated.txt", sep=""), sep="\t", quote=FALSE, row.names=FALSE)
+```
+
+
+
+
+
+```{r}
+groupedDf <- df %>% group_by(CDR3, Label) %>% mutate(Duplicates = n(), nDiffAntigens = n_distinct(Class)) %>% slice(1) %>% arrange(CDR3) %>% select(CDR3, Label, Duplicates,  nDiffAntigens, Class)
+groupedDf
+```
+
+```{r}
+forSaving <- groupedDf %>% filter(Label=="Binder")
+```
+
+```{r}
+write.table(forSaving, paste("Task2", prefix, "CDR3BindAtLeastOne.txt", sep=""), quote=FALSE, sep="\t", row.names=FALSE) 
+```

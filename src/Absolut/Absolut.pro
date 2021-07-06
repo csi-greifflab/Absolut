@@ -5,6 +5,7 @@ HEADERS += \
     antigenLib.h \
     epitope.h \
     fileformats.h \
+    generatemutants.h \
     html.h \
     importrepertoire.h \
     motifFeatures.h \
@@ -20,6 +21,7 @@ SOURCES += \
     antigenLib.cpp \
     epitope.cpp \
     fileformats.cpp \
+    generatemutants.cpp \
     html.cpp \
     importrepertoire.cpp \
     motifFeatures.cpp \

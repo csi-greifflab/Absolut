@@ -19,11 +19,19 @@ int lattice::idFromPosisition(vector<int> position){
         cerr << "ERR: lattice::idFromPosition, Incorrect position : " << position[0] << "," << position[1] << "," << position[2] << endl;
     return position[0] + YWidth*position[1] + YWidth*ZWidth*position[2];
 }
-int lattice::idFromPosisition(float x, float y, float z){
+
+int lattice::idFromPosisition(int x, int y, int z){
     if((x < 0) || (x >= XWidth) || (y < 0) || (y >= YWidth) ||(z < 0) || (z >= ZWidth)){
         cerr << "ERR: lattice::idFromPosisition(" << x << "," << y << "," << z << "), out of bounds " << endl;
     }
-    return x + YWidth*y + YWidth*ZWidth*z;
+    return x + YWidth* y + YWidth*ZWidth* z;
+}
+
+int lattice::idFromPosisition(double x, double y, double z){
+    if((x < 0) || (x >= XWidth) || (y < 0) || (y >= YWidth) ||(z < 0) || (z >= ZWidth)){
+        cerr << "ERR: lattice::idFromPosisition(" << x << "," << y << "," << z << "), out of bounds " << endl;
+    }
+    return static_cast<int>(x) + YWidth* static_cast<int>(y) + YWidth*ZWidth* static_cast<int>(z);
 }
 
 vector<int> lattice::idNeighbors(int IDcoord){

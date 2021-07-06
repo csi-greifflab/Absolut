@@ -24,6 +24,9 @@ string getUniqueIDStructure(struct3D& s1);
 
 string getWrittenUniqueIDStructure(struct3D& s1);
 
+std::pair<string, int> uniqueStructure(struct3D& s1);
+std::pair<string, int> oppositeEqualStructure(struct3D& s1);
+
 void testAreStructEqual();
 
 #endif // POOLSTRUCTS_H

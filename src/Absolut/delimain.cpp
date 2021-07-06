@@ -1,3 +1,17 @@
+// This is Absolut (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
+
+// Three ways to compile it:
+//      Using Absolut.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
+//          this .pro file automatically includes "#define ALLOW_GRAPHICS", that will include the openGL code (see plot3d2h).
+//      Using AbsolutNoLib.pro, it includes only the code to generate bindings. No GUI, no openGL. Can be compiled on any computer without any pre-installed library.
+//          this .pro file automally includes "#define NO_QT" that will exclude any Qt dependent code, so pdb.h is not included and neither latFit.
+//          ALLOW_GRAPHICS is node defined, so the openGL code is also excluded
+//      Using AbsolutBoLibMPI.pro, it includes only the code to generate bindings, but allows the use of MPI.
+//          additionnaly, it includes "#define ALLOW_GRAPHICS", and the MPI library is included/linked, and some scripts are made parallel.
+//
+// Note, even without MPI, Absolut can be used multi-thread up to 50 threads. The MPI version is more intended for High Performance Computing architectures.
+// See common.h for more options on including / excluding libraries
+
 #include "../Ymir/ymir.h"
 #include "../Tools/md5.h"
 #include "motifFeatures.h"
@@ -16,6 +30,12 @@
 #include <iostream>
 #include <fstream>
 
+// for absolut this is 10 and 11
+#define DefaultReceptorSizeBonds 10
+#define DefaultContactPoints 11
+
+// This option includes the crystal structure from the PDB antibody that was binding the antigen
+#define defaultIncludePDBantibody false
 
 // for sleep
 #ifdef _WIN32
@@ -23,6 +43,7 @@
 #else
 #include <unistd.h>
 #endif
+
 #include <cstdlib>
 
 #ifndef NO_LIBS
@@ -31,17 +52,6 @@
 
 
 using namespace std;
-
-// This is Absolut (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
-
-// Three ways to compile it:
-//      Using Absolut.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
-//          this .pro file automatically includes "#define ALLOW_GRAPHICS", that will include the openGL code (see plot3d2h).
-//      Using AbsolutNoLib.pro, it includes only the code to generate bindings. No GUI, no openGL. Can be compiled on any computer without any pre-installed library.
-//          this .pro file automally includes "#define NO_QT" that will exclude any Qt dependent code, so pdb.h is not included and neither latFit.
-//          ALLOW_GRAPHICS is node defined, so the openGL code is also excluded
-//      Using AbsolutBoLibMPI.pro, it includes only the code to generate bindings, but allows the use of MPI.
-//          additionnaly, it includes "#define ALLOW_GRAPHICS", and the MPI library is included/linked, and some scripts are made parallel.
 
 #ifndef NOQT
 #include <QApplication>
@@ -56,12 +66,12 @@ using namespace std;
 // and add the working folder as the main compiling one
 //https://stackoverflow.com/questions/31783667/set-number-of-processes-mpi-in-cmake-project-at-qtcreator
 #endif
+
 #include "pthread.h"
 
 static pthread_mutex_t lockSaveCommonDataset =  PTHREAD_MUTEX_INITIALIZER;
 
-
-// The main.cpp is below. First some separate uses of the code are defined.
+// The main.cpp is below. First some separate uses of the code are defined / shown when absolut is called without argument.
 
 string getHelp(int argc, char** argv){
     if(argc < 1) return string("Executable with no name?");
@@ -123,6 +133,7 @@ string getHelp(int argc, char** argv){
     res << " " << programName << "visualize ID_antigen\n";
     res << " " << programName << "visualize ID_antigen bindingDatasetFile [maxEnergy=1e6]\n";
     res << " " << programName << "hotspots ID_antigen bindingDatasetFile [maxEnergy=1e6] [sizeKsets=4] [degree=1]\n";
+    res << " " << programName << "interface ID_antigen CDRH3seq\n";
     res << " \n";
     res << " Option 8: Generate Batch scripts to run repertoire analyses on a slurm cluster for all library antigens.\n";
     res << "          - Generates per antigen: BatchXXX.sh (72 / 120 hrs max), SlurmTestXXX.sh using short file (5 mins max)\n";
@@ -152,7 +163,7 @@ string getHelp(int argc, char** argv){
     return res.str();
 }
 
-// The functions are defined at the bottom of the file.
+// Only functions headers here, the functions' content is defined at the bottom of the file.
 
 // discretize
 int option1(string PDB_ID = "", string chains = "", double resolution = 5.25, string typeDiscrete = "FuC");
@@ -169,11 +180,14 @@ void option4(string ID_antigen, string CDR3);
 // getFeatures
 void option5(string ID_antigen, string bindingDatasetFile, string outputFeaturesFile, int minDegree = 1, bool includeDegreeInMotifs = false);
 
-// checkBindings - this option will be removed, likely
-void option6(string ID_antigen, string bindingDatasetFile){cout <<"Sorry, option 6 not yet ready" << endl;}
+// checkBindings - this option is obsolete
+void option6(string ID_antigen, string bindingDatasetFile){cout <<"Sorry, option 6 is not available" << endl;}
 
 // visualize and visualize_hotspot
 void option7(string ID_antigen, bool generateHotspots = false, string bindingDatasetFile = "", double maxE = 1e+6, int sizeKsets = 4, int degree = 1);
+
+// visualize only paratope and epitope of one binding
+void option7b(string ID_antigen, string sequence);
 
 // batch
 void option8(string fileCDR3s, int nbNodes, string shortTestFile, string architecture);
@@ -190,10 +204,36 @@ void info_fileNames(string ID_antigen);
 void infosAllAntigens(){
     vector<string> toParse = listIDs();
     stringstream res;
-    res << "no\tID\tAAseq\tnAAs\tsurfaceAAs\n";
+    res << "no\tID\tAAseq\tnAAs\tsurfaceAAs\tcore\tlarge\n";
     for(size_t i = 0; i < toParse.size(); ++i){
-        std::pair<superProtein*, vector<int> > AGi = getAntigen(toParse[i]);
-        res << i << "\t" << toParse[i] << "\t" <<  AGi.first->getAAseq() << "\t" << AGi.first->getAAseq().size() << "\t" << getSurfaceAAs(AGi.first) << "\n";
+        //std::pair<superProtein*, vector<int> > AGi = getAntigen(toParse[i]);
+        antigenInfo AGi = getAntigenInfos(toParse[i]);
+
+        vector<vector<int> > hotspotsCore = AGi.hotspotsCore;
+        set<int> accuCore;
+        for(size_t k = 0; k < hotspotsCore.size(); ++k){
+            set<int> thisone = set<int>(hotspotsCore[k].begin(), hotspotsCore[k].end());
+            accuCore.insert(thisone.begin(), thisone.end());
+        }
+        size_t residuesCore = accuCore.size();
+
+        vector<vector<int> > hotspotsLarge = AGi.hotspotsLarge;
+        set<int> accuLarge;
+        for(size_t k = 0; k < hotspotsLarge.size(); ++k){
+            set<int> thisone = set<int>(hotspotsLarge[k].begin(), hotspotsLarge[k].end());
+            accuLarge.insert(thisone.begin(), thisone.end());
+        }
+        size_t residuesLarge = accuLarge.size();
+
+        if(true){
+            int receptorSize = DefaultReceptorSizeBonds; //10;
+            int minInteract = DefaultContactPoints; //11;
+
+            std::pair<superProtein*, vector<int> > AG = getAntigen(toParse[i]);
+            res << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << "\t";
+        }
+
+        res << i << "\t" << toParse[i] << "\t" <<  AGi.first->getAAseq() << "\t" << AGi.first->getAAseq().size() << "\t" << getSurfaceAAs(AGi.first) << "\t" << residuesCore << "\t" << residuesLarge << "\n";
     }
     cout << res.str();
 }
@@ -292,11 +332,6 @@ void infoOneAntigen(string ID_antigen){
 
 
 int main(int argc, char** argv){
-    //testInOutLatticePDB();
-    //TestPDBtoLat();
-    //return 0;
-
-    // 3IU3 has a problem !!!!!!!!!!!
 
     // If using MPI, only option 2 can be run multi-processes, the other ones will only be started by the main process, the other ones will do nothing
     int nJobs = 1;
@@ -408,6 +443,14 @@ int main(int argc, char** argv){
             }
         }
 
+        if(!command.compare("interface")){
+            success = true;
+            switch(argc){
+            case 4: option7b(argv[2], argv[3]); break;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. visualize + 2 argument. got in total " << argc-1 << endl;
+            }
+        }
+
         //./Absolut visualize ID_antigen\n";
         //./Absolut visualize ID_antigen bindingDatasetFile [maxEnergy=1e6]\n";
         //./Absolut hotspots ID_antigen bindingDatasetFile [maxEnergy=1e6] [sizeKsets=4] [degree=1]\n";
@@ -493,18 +536,8 @@ int main(int argc, char** argv){
             }
         }
 
-
-
-
         if(!success) cerr << "Sorry, command " << command << " could not be found/understood. Run without argument for help" << endl;
     }
-/*
-    remaining todo:
-    res << " " << programName << "info_structure  pos codeStructure [AAs] \n";
-    res << " " << programName << "info_structure  pos1 codeStructure1 pos2 codeStructure2 ... [AAs] \n";
-    res << " " << programName << "info_antigen    AntigenID \n";
-    res << " " << programName << "info_fileNames  AntigenID \n";
-*/
 
 #ifdef USE_MPI
     cerr << "Job" << rankProcess + 1 << " Ends up MPI " << endl;
@@ -592,7 +625,7 @@ struct argsThread {
 
 
 
-
+// Main function for the repertoire option, that will be run on each single thread separately.
 void *oneThreadJob(void *input){
     // 1 - Reconstituting the arguments from the pointer to the class argsThreads
     string resultFile = ((struct argsThread*)input)->resultFile;
@@ -732,8 +765,8 @@ void *oneThreadJob(void *input){
 void option2(string ID_antigen, string repertoireFile, int nThreads, string prefix, int startingLine, int endingLine){
 
     // Default options for our foldings:
-    int receptorSize = 10; // defined in number of bounds, add +1 to get the number of AAs
-    int minInteract = 11;
+    int receptorSize = DefaultReceptorSizeBonds; //10; // defined in number of bounds, add +1 to get the number of AAs
+    int minInteract = DefaultContactPoints; //11;
 
     // nJobs will be the ID of this process (if MPI is used, each job will get a different rank), if not, there is only one job with rank 0
     int nJobs = 1;
@@ -835,6 +868,7 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
     int minLine = max(0, startingLine);
     int maxLine = min(static_cast<int>(rep.nLines())-1, endingLine);
     int nToProcess = maxLine - minLine + 1;
+
     int nPerJob = nToProcess / nJobs;   // number per MPI process
 
     int startingLineThisJob = minLine + rankProcess * nPerJob; // + 10000;
@@ -858,6 +892,7 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
         int startingLineThisThread = startingLineThisJob + static_cast<int>(i) * nPerThread;
         int endingLineThisThread = startingLineThisJob + (static_cast<int>(i) + 1) * nPerThread - 1;
         if(static_cast<int>(i) == nThreads - 1) endingLineThisThread = endingLineThisJob;
+        //cout << myID << "t" << i << "    ... will process lines " << startingLineThisThread << " to " << endingLineThisThread << "" << endl;
 
         stringstream resultFile;  resultFile << prefix << "TempBindingsFor" << AntigenName << "_t" << i << "_Part" << rankProcess+1 <<"_of_" << nJobs << ".txt";
         vector< std::pair<string, string> >* listToProcess = new vector< std::pair<string, string> >(rep.getLines(startingLineThisThread, endingLineThisThread));
@@ -909,6 +944,7 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
 
 
     #ifdef USE_MPI
+// This was a code to force MPI processes to wait for each-other using MPI barrier. Apparently, it is not necessary.
 //    double centroid[3];/*ignore this array*/
 //    if (rankProcess != 0) {
 //        MPI_Recv(&centroid, 3, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -916,17 +952,12 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
 //        cout << myID << "=> Will now wait for other process to complete " << endl;
 //        int res = MPI_Barrier(MPI_COMM_WORLD);
 //        if (res != MPI_SUCCESS) cout << myID << ", problem with MPI_Barrier" << endl;
-
-
 //    } else {
 //        for (int i=0; i<nJobs-1; i++)        {
 //            MPI_Send(&centroid, 3, MPI_DOUBLE, i+1, 0, MPI_COMM_WORLD);
 //        }
 //        int res = MPI_Barrier(MPI_COMM_WORLD);
 //        if (res != MPI_SUCCESS) cout << myID << ", problem with MPI_Barrier" << endl;
-
-
-
 //        cout << myID << " => All MPI processes have been completed! Main prosses will take over " << endl;
 //    }
 
@@ -946,8 +977,8 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
 // ================================= Option 4: Single Binding (does all precalculations) ====================================
 
 void option4(string ID_antigen, string CDR3){
-    int receptorSize = 10;
-    int minInteract = 11;
+    int receptorSize = DefaultReceptorSizeBonds; //10;
+    int minInteract = DefaultContactPoints; //11;
 
     // Loading antigen
     string AntigenName = "";
@@ -989,12 +1020,75 @@ void option4(string ID_antigen, string CDR3){
     }
 }
 
+// very similar than singleBinding, except we will take the best binding and show paratope and epitope
+void option7b(string ID_antigen, string CDR3){
+    int receptorSize = DefaultReceptorSizeBonds; //10;
+    int minInteract = DefaultContactPoints; //11;
+
+    // Loading antigen
+    string AntigenName = "";
+    if(ID_antigen.size() < 4){
+        AntigenName = IDshortcut(std::stoi(ID_antigen));
+    } else {
+        AntigenName = IDshortcut(ID_antigen);
+    }
+
+    cout << "   ... loading antigen " << AntigenName << " from the library" << endl;
+    std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
+
+    // Loading or calculating receptor structures around it
+    affinityOneLigand T3 = affinityOneLigand(AG.first, receptorSize, minInteract, -1, 1, AG.second);
+    // This shortcuts a lots of documenting/debugging calculations, and only calculates best energy
+    T3.setUltraFast(true);
+
+    // Getting sliding windows of it
+    vector<string> cutSlides = slides(CDR3, receptorSize+1);
+    size_t nSl = cutSlides.size();
+
+    #ifdef ALLOW_GRAPHICS
+    glDisplay();
+    addToDisplay(AG.first, true);
+
+    addToDisplay(new set<int>(AG.second.begin(), AG.second.end()));
+    #endif
+
+    // For each sliding windows
+    for(size_t i = 0; i < nSl; ++i){
+
+        string subSeq = cutSlides[i];
+        vector<string> optimalStruct;
+        std::pair<double, double> affs = T3.affinity(subSeq, false, &optimalStruct);
+        size_t nS = optimalStruct.size();
+
+        // only says what is happening for the top 100 sequences.
+        cout << CDR3 << "\t" << subSeq << "\t" << affs.first << "\t" << nS;
+
+        // For each optimal binding structure
+        for(size_t j = 0; j < nS; ++j){
+            cout << "\t" << optimalStruct[j];
+            std::pair<int,string> parsed = retrieveStructureFromPosAndStructure( optimalStruct[j], '-');
+            struct3D s = struct3D(parsed.second, UnDefined, parsed.first);
+            superProtein* SasSuperProt = new superProtein(s);
+            #ifdef ALLOW_GRAPHICS
+            addToDisplay(SasSuperProt, false);
+            #endif
+            showParatopeEpitope(AG.first, SasSuperProt);
+        }
+
+
+        cout << endl;
+    }
+    #ifdef ALLOW_GRAPHICS
+    glutMainLoop();
+    #endif
+}
 // ==================== Option 5: Extract features: raw binding dataset => analyzed binding dataset
 
 //possible format 1 (simplified, only one interaction code per sequence - do not include headers):\n";
 //11AAseq,     Energy, interactionCode,                             nOptStr, (position, structure)*\n";
 //RSRISRCHDMV  -84.15  iGjIkCeLgLdYkQhLjLkYjCbFdFkVbLcYaVkYjTiA     1        120675 UUDUSLSSLS\n";
 //VSTAGIIGFTE  -82.8   cGbIaCaQbLaYbCdCfCgNaViRgFiFkFfFaYbTfTcAeA   2        129058 BSDRDLSRSR   129058 BSDRDLSRUR\n";
+
 //possible format 2: (complete: slices of a CDR3, and all possible equally optimal interactions - do not include headers) \n";
 //IDCDR3  CDR3(>=11AAs)       11AAseq,     Energy, nOptBind,  (pos,     structure,  interCode)*\n";
 //36      CARDYYGSSYYFDYW	  RDYYGSSYYFD  -77.18  1          141157	BDDUSRSUUS	bKaDaIdSdTiWiVhDhViQjVkAjKcVcTeTkTjVeLgLhNiYadfkgj\n";
@@ -1070,6 +1164,11 @@ vector<vector<double> >* optionPre7(string ID_antigen){ //, string originalPDBon
     int argc = 1;
     QApplication appl(argc, argv);
     PDB* a2 = new PDB(cutName[0], cutName[1], false, 5.25, "FuC");
+
+    // some antigens need nKeep=40
+    if((!ID_antigen.compare("3WD5_A")) || (!ID_antigen.compare("4PP1_A")) || (!ID_antigen.compare("5JW4_A"))){
+        a2->setnKeep(50);
+    }
     a2->show();
 
 
@@ -1087,7 +1186,11 @@ vector<vector<double> >* optionPre7(string ID_antigen){ //, string originalPDBon
     a.transform();
     superProtein* P3 = a.asSuperProtein();
 
-    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions(cutName[0] + ".pdb", "LH", "FuC");
+    antigenInfo AI = getAntigenInfos(ID_antigen);
+    string antibodyChains = AI.antibodyChains;
+    cout << "The chains of binding antibodies in the original PDB are: " << antibodyChains << endl;
+
+    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions(cutName[0] + ".pdb", antibodyChains, "FuC");
     vector<vector<double> >* transformed = new vector<vector<double> >(pooledPDBtoLattice(positionsAB, a.initXAxis, a.initYAxis, a.listPositions[0]));
 
 
@@ -1111,7 +1214,7 @@ vector<vector<double> >* optionPre7(string ID_antigen){ //, string originalPDBon
 
 //void option7(string ID_antigen, bool generateHotspots = false, string bindingDatasetFile = "", int maxStructures = 1e5){
 void option7(string ID_antigen, bool generateHotspots, string bindingDatasetFile, double maxE, int sizeK, int degree){
-    bool includeAntibodyFromPDB = true;
+    bool includeAntibodyFromPDB = defaultIncludePDBantibody;
 
     #ifndef NOQT
     setPictureFileNamePrefix(string("Hot") + ID_antigen);
@@ -1151,11 +1254,12 @@ void option7(string ID_antigen, bool generateHotspots, string bindingDatasetFile
         std::map<string, int> list = groupStructuresInClasses(goodFoldings);
         cout << "Got the following number of each non-redundant structures in space:" << endl;
         for(std::map<string, int>::iterator it = list.begin(); it != list.end(); ++it){
-            cout << it->first << "\t" << it->second << endl;
+
             std::pair<string, int> str = retrieveStructureFromID(it->first);
             struct3D* representativeStructClass = new struct3D(str.first, UnDefined, str.second);
+            std::pair<string, int> infoOtherWay = oppositeEqualStructure(*representativeStructClass);
 
-
+            cout << it->first << "\t" << it->second << "\t<=>\t" << infoOtherWay.first << "\t" << infoOtherWay.second << endl;
 
             if(generateHotspots){
 
@@ -1386,8 +1490,8 @@ void info_fileNames(string ID_antigen){
     } else {
         AntigenName = IDshortcut(ID_antigen);
     }
-    int receptorSize = 10;
-    int minInteract = 11;
+    int receptorSize = DefaultReceptorSizeBonds; //10;
+    int minInteract = DefaultContactPoints; //11;
     cout << "   ... loading antigen " << AntigenName << " from the library" << endl;
     std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
     cout << "Pre-calculated structures are in " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;

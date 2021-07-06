@@ -21,6 +21,12 @@ The method and analyses of antibody-antigen bindings are explained in:
 - Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction' (will be available in a few days in BioRXiV)
 - Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', BioRXiV [https://www.biorxiv.org/content/10.1101/766535v1](link)
 
+## Download / clone
+
+```bash
+git clone git://github.com/csi-greifflab/Absolut
+```
+
 ## Installation
 
 Absolut! was written in C++. 
@@ -60,10 +66,7 @@ make MPIgxx
 
 Installing and then linking the libraries can be tricky depending on the OS. 
 Full help for installing these libraries (especially in Windows) is provided in the documentation doc/HowToAbsolut
-
-It is possible to use a subset of libraries (to avoid installing them) by changing some hearder. 
-#define ALLOW_GRAPHICS in common.h activates codes using freeglut/openGL. Comment this line to be independent of freeglut. 
-it is possible to compile without the Qt platform by adding #define NOQT in common.h and CONFIG += -QT in Absolut/Absolut.pro
+It is also possible to use Absolut! with a user-defined custom subset of libraries (See in the full documentation).
 
 Installing on linux (simplest):
 ```bash

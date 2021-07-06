@@ -12,7 +12,7 @@
 #include <iostream>
 #include <algorithm> // for sghuffle
 
-std::mt19937* random::generator = NULL;
+std::mt19937* random::generator = nullptr;
 bool random::initialized = false;
 
 void random::initialize(unsigned int init_seed){

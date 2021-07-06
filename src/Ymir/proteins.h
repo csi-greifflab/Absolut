@@ -150,7 +150,7 @@ struct ensProts {
     }
                             /// \brief Get pointer to ith protein \ingroup Prot
     superProtein* operator[](int i) {
-       if((i < 0) || (i > (int) list.size())) {cerr << "ERR: ensProts[" << i << "], out of bounds \n"; return NULL;}
+       if((i < 0) || (i > (int) list.size())) {cerr << "ERR: ensProts[" << i << "], out of bounds \n"; return nullptr;}
           return list[i];
     }
                             /// \brief Number of protein stored \ingroup Prot

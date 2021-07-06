@@ -224,6 +224,18 @@ int norm2(vector<int> toTest){
     return toTest[0] * toTest[0] + toTest[1] * toTest[1] + toTest[2] * toTest[2];
 }
 
+double norm2(vector<double> toTest){
+    return toTest[0] * toTest[0] + toTest[1] * toTest[1] + toTest[2] * toTest[2];
+}
+
+int norm2(vector<int> v1, vector<int> v2){
+    return norm2(vector<int>({v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]}));
+}
+
+double norm2(vector<double> v1, vector<double> v2){
+    return norm2(vector<double>({v2[0] - v1[0], v2[1] - v1[1], v2[2] - v1[2]}));
+}
+
 // 2/ creates a 'movement map', where, for each combination, the next direction (Ox) and y axis (Oy) is pre-computed / stored
 std::map<int, std::pair<moveDirection, moveDirection> > movementMap(){
     std::map<int, std::pair<moveDirection, moveDirection> > decision;
@@ -1097,7 +1109,7 @@ void testRotations(){
     string S3 = "LSSUDLRL";
     string S4 = "SSSLRLRL";
 
-    char *c[] = {(char*)"Hello",NULL};
+    char *c[] = {(char*)"Hello",nullptr};
     glDisplay(0,c);
 
     for(int i = 1; i <= 4; ++i){

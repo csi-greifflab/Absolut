@@ -16,6 +16,7 @@ void testGenerateSubsets();
 
 void testSetCoveringStructures();
 void showBindingHotspots(dataset<analyzedBinding>& annotatedDataset, string antigenID, int sizeSet = 4);
+void showParatopeEpitope(superProtein* prot1, superProtein* prot2, vector<int> forbiddenPos = vector<int>());
 //class epitope
 //{
 //public:

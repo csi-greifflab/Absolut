@@ -79,7 +79,8 @@ vector< pair<string, string > > repertoire::getLines(int beginLine, int endingLi
     if(endingLine >= static_cast<int>(nL)) cerr << "ERR: repertoire::getLines(" << beginLine << ", " << endingLine << "), the repertoire only has " << nL << " lines " << endl;
     endingLine = min(endingLine, 1000000000);
 
-    for(size_t i = static_cast<size_t>(beginLine); i < static_cast<size_t>(endingLine); ++i){
+    // THERE WAS A BUG HEEEEERE!!! Last line was omitted (changed bountary up there to -1 for ending line
+    for(size_t i = static_cast<size_t>(beginLine); i <= static_cast<size_t>(endingLine); ++i){
         res.push_back(std::pair<string, string>(listIDs[i], sequences[i]));
     }
     return res;
