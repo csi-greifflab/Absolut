@@ -31,7 +31,7 @@ git clone git://github.com/csi-greifflab/Absolut
 
 ## Usage
 
-Absolut! can be compiled into two versions: one that doesn't require any library to be installed (AbsolutNoLib) and the full version (Absolut). See Installation for details.
+Absolut! can be compiled into three versions: one that doesn't require any library to be installed (AbsolutNoLib), the full version (Absolut), and a version specific for using MPI (AbominationMPI). See Installation for details.
 
 Calling Absolut alone shows the list of available options.
 ```bash
@@ -44,17 +44,35 @@ An all-in-one example for most tasks is:\
 *plan 3GB of disk space, 2 GB memory and 500MB download*
 ```bash
 #With ./Absolut or ./AbsolutNoLib:
+
+# Get the list of available lattice antigens
 ./AbsolutNoLib listAntigens
+
+# Get the list of precomputed CDRH3 possible structures for an antigen
 ./AbsolutNoLib info_fileNames 1FBI_X
 wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+
+# Get the antibody-antigen complex of a CDRH3 sequence to an antigen (requires the downloaded file above to be in the same folder)
 ./AbsolutNoLib singleBinding 1FBI_X CARAAHKLARIPK
+
+# High throughput calculation of antibody-antigen complexes for a list (repertoire) of CDRH3 sequences. Here, requests 10 threads in parallel.
 ./AbsolutNoLib repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3.txt is a provided example list of CDR3s inside src/
+
+# Calculation of structure and sequence encodings from the produced list of antibody-antigen complexes
 ./AbsolutNoLib getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
 
-#Only possible with full ./Absolut
+# Generating new antigens and visualizing complexes is only possible with the full ./Absolut
+
+# Takes a PDB and the chains of interests, lattice resolution and discretization method and returns the C++ code for the antigen [New antigens would need to be manually added to antigenLib.cpp].
 ./Absolut discretize 1CZ8 VW 5.25 FuC
+
+# Visualizing of available antigens in 3D
 ./Absolut visualize 1FBI_X 
+
+# Visualizing many binding complexes  
 ./Absolut visualize 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5
+
+# Visualizing binding hotspots
 ./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 
 ```
 
@@ -63,7 +81,7 @@ wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27
 Absolut! was written in C++. 
 
 Three versions are provided with more or less library requirements: *Absolut*, *AbsolutNoLib* and *AbominationMPI*.
-All versions require **a C++ compiler**.
+All versions require **a C++ compiler**. We recommend starting with AbsolutNoLib, which is easier to install, as most tasks are already available with this version. 
 
 ![Absolut! Package overview](doc/images/package.png?raw=true)
 
