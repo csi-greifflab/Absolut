@@ -29,16 +29,44 @@ The method and analyses of antibody-antigen bindings are explained in:
 git clone git://github.com/csi-greifflab/Absolut
 ```
 
+## Usage
+
+Calling Absolut alone shows the list of available options.
+```bash
+./Absolut 
+#or
+./AbsolutNoLib
+```
+
+All commands are identical for *./Absolut* or *./AbsolutNoLib*
+
+
+An all-in-one example for most tasks is:\
+*plan 3GB of disk space, 2 GB memory and 500MB download*
+```bash
+#With ./Absolut or ./AbsolutNoLib:
+./AbsolutNoLib listAntigens
+./AbsolutNoLib info_fileNames 1FBI_X
+wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+./AbsolutNoLib singleBinding 1FBI_X CARAAHKLARIPK
+./AbsolutNoLib repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3.txt is a provided example list of CDR3s inside src/
+./AbsolutNoLib getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
+
+#Only possible with full ./Absolut
+./Absolut discretize 1CZ8 VW 5.25 FuC
+./Absolut visualize 1FBI_X 
+./Absolut visualize 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5
+./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 
+```
+
 ## Installation
 
 Absolut! was written in C++. 
 
 Three versions are provided with more or less library requirements: *Absolut*, *AbsolutNoLib* and *AbominationMPI*.
-- All versions require **a C++ compiler**.
-- The discretization option requires **Python** and **wget** in all three versions (needeed to download PDBs and for the pdb-tools scripts)
+All versions require **a C++ compiler**.
 
-
-**AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization. We recommend first compiling/running AbsolutNoLib, which should work smoothly.
+**1/ AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization. We recommend first compiling/running AbsolutNoLib, which should work smoothly.
 ```bash
 cd src
 make		# This creates 'AbsolutNoLib' executable. 
@@ -46,7 +74,7 @@ make		# This creates 'AbsolutNoLib' executable.
 
 ![Video - download and install NoLib in Linux](doc/Download_Install_NoLib_Linux-converted.mp4?raw=true)
 
-**AbominationMPI** is the MPI parallelized version for high throughput repertoire bindings generation. 
+**2/ AbominationMPI** is the MPI parallelized version for high throughput repertoire bindings generation. 
 - requires **MPI compiler and headers**
 ```bash
 cd src
@@ -60,7 +88,7 @@ make MPIgxx
 ```
 
 
-**Absolut** is the full version,
+**3/ Absolut** is the full version,
 - requires the **Qt framework**
 - requires **freeglut library** (or another other C++ glut library) fro visualizing 3D lattice structures
 - requires the **gsl** library for discretizing new antigens
@@ -99,7 +127,6 @@ qmake ../Absolut/Absolut.pro	#qmake creates a new Makefile embedding Qt librarie
 make		#This creates Absolut
 ```
 
-
 Alternately, if you have installed the Qt framework with qtcreator, 
 ```bash
 qtcreator Absolut/Absolut.pro
@@ -135,37 +162,6 @@ This might be solved by adding "QMAKE_CXXFLAGS += -std=c++14 -std=c++17" inside 
 ![Absolut! Package overview](doc/images/package.png?raw=true)
 
 
-## Usage
-
-
-
-Calling Absolut alone shows the list of available options.
-```bash
-./Absolut 
-#or
-./AbsolutNoLib
-```
-
-All commands are identical for *./Absolut* or *./AbsolutNoLib*
-
-
-An all-in-one example for most tasks is:\
-*plan 3GB of disk space, 2 GB memory and 500MB download*
-```bash
-#With ./Absolut or ./AbsolutNoLib:
-./AbsolutNoLib listAntigens
-./AbsolutNoLib info_fileNames 1FBI_X
-wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
-./AbsolutNoLib singleBinding 1FBI_X CARAAHKLARIPK
-./AbsolutNoLib repertoire 1FBI_X SmallSetCDR3.txt 10  #SmallSetCDR3.txt is a provided example list of CDR3s inside src/
-./AbsolutNoLib getFeatures 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt outputFeaturesFile.txt 1 true
-
-#Only possible with full ./Absolut
-./Absolut discretize 1CZ8 VW 5.25 FuC
-./Absolut visualize 1FBI_X 
-./Absolut visualize 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5
-./Absolut hotspots 1FBI_X 1FBI_XFinalBindings_Process_1_Of_1.txt -95.5 4 
-```
 
 ## Step-by-step use cases
 
