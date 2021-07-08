@@ -9,6 +9,8 @@ Unconstrained lattice antibody-antigen bindings generator - One tool to simulate
 
 The database generated with Absolut! is available at [https://greifflab.org/Absolut/](https://greifflab.org/Absolut/).
 
+![Absolut! overview](doc/images/GraphicalAbstract.png?raw=true)
+
 ## License
 
 Absolut! is distributed under the GNU affero general public license (see License.md)
