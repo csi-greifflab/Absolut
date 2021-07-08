@@ -65,6 +65,8 @@ Absolut! was written in C++.
 Three versions are provided with more or less library requirements: *Absolut*, *AbsolutNoLib* and *AbominationMPI*.
 All versions require **a C++ compiler**.
 
+![Absolut! Package overview](doc/images/package.png?raw=true)
+
 **1/ AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization. We recommend first compiling/running AbsolutNoLib, which should work smoothly.
 ```bash
 cd src
@@ -157,9 +159,6 @@ This might be solved by adding "QMAKE_CXXFLAGS += -std=c++14 -std=c++17" inside 
 
 
 *Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version (and do not need to be installed by the user) - Latfit has been slighty modified to consider the center of a full residue (not only the side-chain) during discretization*
-
-![Absolut! Package overview](doc/images/package.png?raw=true)
-
 
 
 ## Step-by-step use cases
