@@ -31,15 +31,14 @@ git clone git://github.com/csi-greifflab/Absolut
 
 ## Usage
 
+Absolut! can be compiled into two versions: one that doesn't require any library to be installed (AbsolutNoLib) and the full version (Absolut). See Installation for details.
+
 Calling Absolut alone shows the list of available options.
 ```bash
 ./Absolut 
 #or
 ./AbsolutNoLib
 ```
-
-All commands are identical for *./Absolut* or *./AbsolutNoLib*
-
 
 An all-in-one example for most tasks is:\
 *plan 3GB of disk space, 2 GB memory and 500MB download*
