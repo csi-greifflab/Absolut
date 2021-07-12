@@ -23,8 +23,10 @@ Absolut! is distributed under the GNU affero general public license (see License
 You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
 
 The method and analyses of antibody-antigen bindings are explained in:
-- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction', BioRXiV [https://www.biorxiv.org/content/10.1101/2021.07.06.451258v2](link)
-- Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', BioRXiV [https://www.biorxiv.org/content/10.1101/766535v1](link)
+- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction', BioRXiV [link](https://www.biorxiv.org/content/10.1101/2021.07.06.451258v2)
+- Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', BioRXiV [link](https://www.biorxiv.org/content/10.1101/766535v1)
+
+It has been used to benchmark antibody generative ML models in: Akbar and Robert et al 2021, 'In silico proof of principle of machine learning-based antibody design at unconstrained scale' [link](https://www.biorxiv.org/content/10.1101/2021.07.08.451480v1)
 
 ## Download / clone
 
