@@ -1,13 +1,16 @@
 # Absolut!
 Unconstrained lattice antibody-antigen bindings generator - One tool to simulate them all!
 
+A [Greifflab](https://greifflab.org/Absolut/) product!
 
-**Absolut!** 
+**Absolut! software** 
 - takes PDB antigens, converts them into lattice representation with integer positions. 
 - takes CDR3 Amino Acid sequences, and computes their best binding around a lattice antigen.
 - generates features of antibody-antigen bindings directly usable for Machine Learning
 
-The database generated with Absolut! is available at [https://greifflab.org/Absolut/](https://greifflab.org/Absolut/).
+**Absolut! database**
+
+The database generated with Absolut! is available as repository in [NIRD research data storage](https://archive.sigma2.no/pages/public/datasetDetail.jsf?id=10.11582/2021.00063). The files can directly be accessed by http [Database Files](https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/).
 
 ![Absolut! overview](doc/images/GraphicalAbstract.png?raw=true)
 
@@ -20,7 +23,7 @@ Absolut! is distributed under the GNU affero general public license (see License
 You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
 
 The method and analyses of antibody-antigen bindings are explained in:
-- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction' (will be available in a few days in BioRXiV)
+- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction', BioRXiV [https://www.biorxiv.org/content/10.1101/2021.07.06.451258v2](link)
 - Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', BioRXiV [https://www.biorxiv.org/content/10.1101/766535v1](link)
 
 ## Download / clone
