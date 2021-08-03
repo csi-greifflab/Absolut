@@ -183,6 +183,7 @@ This might be solved by adding "QMAKE_CXXFLAGS += -std=c++14 -std=c++17" inside 
 
 *Note, the libraries Latfit, pdb-tools and soil are provided inside Absolut with their compatible version (and do not need to be installed by the user) - Latfit has been slighty modified to consider the center of a full residue (not only the side-chain) during discretization*
 
+*AbsolutNoLib has been run on a HPC cluster with CentOS Linux version 7, and gcc version 4.8.5 (no other libraries required). The full Absolut! has been run on windows 10, using gcc 7.3.0 (MinGW-W64), gsl 2.6, GNU Wget 1.11.4, Qmake 3.1, Qt version 5.12.5 and freeglut 3.2.1*  
 
 ## Step-by-step use cases
 
