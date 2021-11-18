@@ -117,6 +117,7 @@ make MPIgxx
 - requires **freeglut library** (or another other C++ glut library) fro visualizing 3D lattice structures
 - requires the **gsl** library for discretizing new antigens
 - requires **wget**, for downloading files (like PDBs when discretizing)
+- optionally, a sorftware to visualize PDBs (like Rasmol)
 
 Installing and then linking the libraries can be tricky depending on the OS. 
 Full help for installing these libraries (especially in Windows) is provided in the documentation doc/HowToAbsolut
@@ -176,7 +177,8 @@ Then, from the src/bin/ folder,
 qmake ../Absolut/Absolut.pro
 make
 ```
-
+Some OS specific points:
+Inside Absolut/Absolut.pro, your compiler might recognize only -o1 or -O1. Linking the libraries might require that you provide their folder. Can either add it in the Absolut.pro linker options, or inside the Makefile manually (but then do not run qmake anymore). -framework openGL should work for openGL and already be added. 
 Depending on your g++ compiler, there might be conflicts between the C++ language of the libraries and the C++ standard libraries provided with the compiler. 
 This might be solved by adding "QMAKE_CXXFLAGS += -std=c++14 -std=c++17" inside Absolut/Absolut.pro. We didn't add these lines by default in case your C++ compiler doesn't support C++17.
 
