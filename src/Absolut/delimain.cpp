@@ -1444,7 +1444,7 @@ void option8(string fileCDR3s, int nbNodes, string shortTestFile, string archite
         std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
         getStructFile << "Get" << AntigenName << "_Structures.sh";
         ofstream f4(getStructFile.str());
-        f4 << "wget philippe-robert.com/Absolut/Structures/" << fnameStructures(AG.first, 10, 11, AG.second) << "\n";
+        f4 << "wget https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/" << fnameStructures(AG.first, 10, 11, AG.second) << "\n";
         f4.close();
     }
     listBatchs.close();
@@ -1495,5 +1495,5 @@ void info_fileNames(string ID_antigen){
     cout << "   ... loading antigen " << AntigenName << " from the library" << endl;
     std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
     cout << "Pre-calculated structures are in " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;
-    cout << "use:\nwget http://philippe-robert.com/Absolut/Structures/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second)<< endl;
+    cout << "use:\nwget https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second)<< endl;
 }
