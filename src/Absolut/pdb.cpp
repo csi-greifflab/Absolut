@@ -551,7 +551,7 @@ void PDB::getFasta(){
     PDB_ID = ui->lineEditPDB_ID->text().toStdString();
     if(!exists(PDB_ID + string(".fa"))){
         stringstream command;
-        command << "wget -q --no-check-certificate -O " << PDB_ID << ".fa \"https://www.rcsb.org/pdb/download/viewFastaFiles.do?structureIdList=" << PDB_ID << "&compressionType=uncompressed\" | tar xfv -;\n";
+        command << "wget -q --no-check-certificate -O " << PDB_ID << ".fa \"https://www.rcsb.org/fasta/entry/" << PDB_ID << "/download\"";
         cout << "Executing >> " << command.str() << endl;
         system(command.str().c_str());
     }
