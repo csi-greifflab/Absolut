@@ -16,10 +16,6 @@ The database generated with Absolut! is available as repository in [NIRD researc
 
 ![Absolut! overview](doc/images/GraphicalAbstract.png?raw=true)
 
-## License
-
-Absolut! is distributed under the GNU affero general public license (see License.md)
-
 ## Documentation / Reference
 
 You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
