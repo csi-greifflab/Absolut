@@ -8,6 +8,14 @@
 #include "proteins.h"
 using namespace std;
 
+// Option:
+// You can define a specific location where the program will generate the two processed structure files
+// example: #define manualStructureFilesLocation "$SCRATCH/"
+// #define manualStructureFilesLocation "/cluster/work/users/pprobert/Temp/"
+// if you wish to use the current folder, just use ""
+// of note, the input structure files will still be searched in the local folder (or its parent)
+#define manualStructureFilesLocation ""
+
 /// \file
 /// \brief Enumeration of (receptor) structures around a predefined protein (ligand: structure + AAs)
 /// \date 11th October 2019 \author Philippe A. Robert
@@ -143,7 +151,7 @@ string fnameStructuresAndCompactForAASeqLigand(superProtein* ligand, int sizeRec
 string fileNameCompactForAASeqLigand(superProtein* ligand, int sizeReceptors, int minimalNInteract, vector<int> forbiddenPos = vector<int>());
                             /// \brief Tool function to recreate the files with interaction codes of receptors around a ligand when a ligand has a different AA sequence but the
                             /// file with the list of structures has already been computed \ingroup CodInter
-int reGenerateCompressedStructures(string fnameAllStructures, string newSequenceLigand, string fnameOutAll, string fnameOutCompressed, superProtein* forceLigand = NULL);
+int reGenerateCompressedStructures(string fnameAllStructures, string newSequenceLigand, string fnameOutAll, string fnameOutCompressed, superProtein* forceLigand = nullptr);
                             /// \brief Generate a unique name for a file (library) with receptor sequences and their affinity to a ligand. If only good receptor are kept
                             /// in the file, the energy threshold is included in its name. \ingroup CodInter
 string fnameLibrary(string ligandStructSeq, string ligandSeq, int sizeReceptors, int minimalNInteract, double threshold, vector<int> forbiddenPos  = vector<int>());

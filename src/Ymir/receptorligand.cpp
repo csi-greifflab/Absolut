@@ -741,6 +741,9 @@ int reGenerateCompressedStructures(string fnameAllStructures, string newSequence
         cerr << "ERR: reGenerateCompressedStructures , " << fnameAllStructures << ", should start by an appropriate number of structures (and < 1e10). got " << nRecept << endl;
         return -1;
     }
+
+    #define writeFAll
+    #ifdef writeFAll
     ofstream res(fnameOutAll.c_str());
 
     // Bad way to
@@ -754,7 +757,7 @@ int reGenerateCompressedStructures(string fnameAllStructures, string newSequence
     res << "LatticeWidthXYZ\t" << XWidth << "\t" << YWidth << "\t" << ZWidth << endl;
     res << "Receptors\tSize=\t" << -1 << "\tMinInteract=\t" << -1 << endl;
     res << nRecept << endl;
-
+    #endif
 
     int sizeReceptor = -1;
     // this is copy paste from the next function (print to File). Maybe make a function, later
@@ -771,7 +774,9 @@ int reGenerateCompressedStructures(string fnameAllStructures, string newSequence
         //struct3D possibleReceptor = struct3D(seqStr, UnDefined, pos);
         //££tag
         superProtein possibleReceptor = superProtein(seqStr, pos);
+        #ifdef writeFAll
         res << pos << "\t" << seqStr << "\t";
+        #endif
 //        stringstream codeInters;
 //        // codeInters << nbTouchPoints(*(possibleReceptors[i]), ligand);
 //        // Interactions = <pos, pos> or <pos, ligandAA>. Position encoded a...z, ligandAA encoded A..Z
@@ -791,9 +796,13 @@ int reGenerateCompressedStructures(string fnameAllStructures, string newSequence
         } else {
             compressedReceptors[codeInters] = 1;
         }
+        #ifdef writeFAll
         res << codeInters << endl;
+        #endif
     }
+    #ifdef writeFAll
     res.close();
+    #endif
 
     ofstream res2 (fnameOutCompressed.c_str());
     std::map<string,int>::iterator it2;
@@ -1185,9 +1194,9 @@ string fnameStructuresAndCompactForAASeqLigand(superProtein* ligand, int sizeRec
     string ligandAAseq = ligand->getAAseq();
     if(ligand->contiguous()){
         string ligandStructSeq = ligand->structure->sequence;
-        fname << shrt(ligandStructSeq) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << ".txt";
+        fname << manualStructureFilesLocation << shrt(ligandStructSeq) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << ".txt";
     } else {
-        fname << hashWithoutAAs(*ligand) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << ".txt";
+        fname << manualStructureFilesLocation << hashWithoutAAs(*ligand) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << ".txt";
     }
     return fname.str();
 }
@@ -1198,9 +1207,9 @@ string fileNameCompactForAASeqLigand(superProtein* ligand, int sizeReceptors, in
     string ligandAAseq = ligand->getAAseq();
     if(ligand->contiguous()){
         string ligandStructSeq = ligand->structure->sequence;
-        fname << shrt(ligandStructSeq) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-"  << codePos(forbiddenPos) << "Compact.txt";
+        fname << manualStructureFilesLocation << shrt(ligandStructSeq) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-"  << codePos(forbiddenPos) << "Compact.txt";
     } else {
-        fname << hashWithoutAAs(*ligand) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << "Compact.txt";
+        fname << manualStructureFilesLocation << hashWithoutAAs(*ligand) << "+" << shrt(ligandAAseq) << "-" << sizeReceptors << "-" << minimalNInteract << "-" << codePos(forbiddenPos) << "Compact.txt";
     }
     return fname.str();
 }

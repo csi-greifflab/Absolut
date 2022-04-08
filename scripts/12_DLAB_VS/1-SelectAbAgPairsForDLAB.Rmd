@@ -1,0 +1,338 @@
+```{r}
+# This script generates antibody-antigen pairs for the DLAB-VS screening
+# Input 1 (text files): raw bindings where each slice is annotated with binding energy
+# Output: "DatabaseDLAB.txt", with list of antibody antigen pairs
+
+# format of output file DatabaseDLAB.txt:
+# AGname	Slide	Energy	Structure	type	label	repeated	nLabels
+# 1ADQ_A	HYDYPLCLDYW	-94.59	137248-RRDLDRLULU	Binder	Positive	2	2
+# 1ADQ_A	ARYLLKGLYFD	-98.24	124837-UULLSRDSDL	Binder	Positive	2	2
+# 1ADQ_A	ARLGYDYLYYF	-96.58	141287-DDLUSURLRR	Binder	Positive	2	2
+# 1ADQ_A	HLDLPVEYFDV	-95.25	165795-SLDURSDDLR	Binder	Positive	2	2
+# 1ADQ_A	TVLYYYGRPWF	-94.79	128868-LSRRLLSUSU	Binder	Positive	2	2
+# 1ADQ_A	AILLEGHYYAM	-95.4	128868-LSRRLLSUSU	Binder	Positive	2	2
+# 1ADQ_A	RLDFHWYFDVW	-98.05	137248-RRDLDUDRDR	Binder	Positive	2	2
+
+library(stringr)
+library(dplyr)
+```
+
+
+
+```{r}
+# This takes the Absolut database, raw bindings per class
+# (the files are in https://archive.norstore.no/pages/public/datasetDetail.jsf?id=10.11582/2021.00063, /10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/RawBindingsPerClassMurine/).
+
+folder = "D:/pprobert/Datasets/Features/"
+#Expected files in this folder: 
+#    fileSuperHeroes =  paste0(AGname, "/", AGname, "_superHeroes", typeSeq, ".txt")
+#    fileHeroes =       paste0(AGname, "/", AGname, "_HeroesExclusive", typeSeq, ".txt")
+#    fileMascotte =     paste0(AGname, "/", AGname, "_MascotteExclusive", typeSeq, ".txt")
+#    fileLoosers =      paste0(AGname, "/", AGname, "_LooserExclusive", typeSeq, ".txt")
+#    fileNonBinders =   paste0(AGname, "/", AGname, "_500kNonMascotte", typeSeq, ".txt")
+
+#This is the final nonredundant selection of antigens, n=142
+lib <- c("1ADQ_A", "1FBI_X", "1FNS_A", "1FSK_A", "1H0D_C", "1JPS_T", "1KB5_AB", "1NCB_N", "1NSN_S", "1OAZ_A", "1OB1_C", "1OSP_O", "1PKQ_J", "1QFW_AB", "1RJL_C", "1S78_B", "1TQB_A", "1WEJ_F", "1YJD_C", "1ZTX_E", "2ARJ_RQ", "2B2X_A", "2FD6_AU", "2HFG_R", "2IH3_C", "2JEL_P", "2Q8A_A", "2R29_A", "2R4R_A", "2R56_A", "2UZI_R", "2VXQ_A", "2VXT_I", "2W9E_A", "2WUC_I", "2XQB_A", "2XWT_C", "2YC1_C", "2YPV_A", "2ZCH_P", "3BGF_S", "3BN9_A", "3CVH_ABC", "3DVG_XY", "3EFD_K", "3GI9_C", "3HI6_A", "3JBQ_B", "3KJ4_A", "3KR3_D", "3KS0_J", "3L5X_A", "3L95_X", "3MJ9_A", "3NCY_A", "3NFP_I", "3NH7_A", "3Q3G_E", "3R08_E", "3R1G_B", "3RAJ_A", "3RKD_A", "3RVV_A", "3SKJ_E", "3SQO_A", "3TT1_A", "3U9P_C", "3UBX_A", "3V6O_A", "3VG9_A", "3VRL_C", "3WD5_A", "4AEI_A", "4CAD_C", "4DKE_A", "4H88_A", "4HC1_B", "4HJ0_B", "4I18_R", "4I77_Z", "4K24_A", "4K3J_A", "4K9E_C", "4KI5_M", "4KXZ_A", "4LU5_B", "4MXV_B", "4N9G_C", "4NP4_A", "4OII_A", "4OKV_E", "4PP1_A", "4QCI_D", "4QEX_A", "4QNP_A", "4QWW_A", "4R9Y_D", "4RGM_S", "4U1G_A", "4U6V_A", "4WV1_F", "4Y5V_C", "4YPG_C", "4YUE_C", "4ZFG_A", "4ZFO_F", "4ZSO_E", "5B8C_C", "5BVP_I", "5C0N_A", "5C7X_A", "5CZV_A", "5D93_A", "5DFV_A", "5DHV_M", "5DMI_A", "5DO2_B", "5E8D_A", "5E8E_LH", "5E94_G", "5EII_G", "5EPM_C", "5EU7_A", "5EZO_A", "5F3B_C", "5FB8_C", "5H35_C", "5HDQ_A", "5HI4_B", "5IKC_M", "5J13_A", "5JW4_A", "5JZ7_A", "5KN5_C", "5KTE_A", "5L0Q_A", "5LQB_A", "5MES_A", "5T5F_A", "5TH9_A", "5TLJ_X", "5TZ2_C");
+length(lib)
+```
+
+
+```{r}
+typeSeq = "Slices"; # or put "" for CDR3s
+df <- data.frame(AGname=character(),
+                   type=character(),
+                   minEnergy=numeric(),
+                   maxEnergy=numeric(),
+                   nLines = numeric(),
+                   nSeqs=numeric(),
+                   stringsAsFactors=FALSE); #Seems that yes creates a problem when adding new lines
+#colnames(df) <- c("AGname", "type", "minEnergy", "maxEnergy", "nSeqs")
+
+for(AGname in lib){
+
+
+#AGname = "1ADQ_A"      
+
+    fileSuperHeroes =  paste0(AGname, "_superHeroes", typeSeq, ".txt")
+    fileHeroes =       paste0(AGname, "_HeroesExclusive", typeSeq, ".txt")
+    fileMascotte =     paste0(AGname, "_MascotteExclusive", typeSeq, ".txt")
+    fileLoosers =      paste0(AGname, "_LooserExclusive", typeSeq, ".txt")
+    fileNonBinders =   paste0(AGname, "_500kNonMascotte", typeSeq, ".txt")
+    
+    SH <- read.table(paste0(folder, AGname, "Analyses/", fileSuperHeroes), header=TRUE);
+    H <- read.table(paste0(folder, AGname, "Analyses/", fileHeroes), header=TRUE);
+    M <- read.table(paste0(folder, AGname, "Analyses/", fileMascotte), header=TRUE);
+    L <- read.table(paste0(folder, AGname, "Analyses/", fileLoosers), header=TRUE);
+    NB <- read.table(paste0(folder, AGname, "Analyses/", fileNonBinders), header=TRUE);
+
+    #rbind erases columns names if starting with empty datafrae
+    df[nrow(df)+1,] <- c(AGname, "SuperHeroes", min(SH$Energy), max(SH$Energy),  nrow(SH), length(unique(SH$Slide)));
+    df[nrow(df)+1,] <- c(AGname, "Heroes",      min(H$Energy),  max(H$Energy),   nrow(H),  length(unique(H$Slide)));
+    df[nrow(df)+1,] <- c(AGname, "Mascotte",    min(M$Energy),  max(M$Energy),   nrow(M),  length(unique(M$Slide)));
+    df[nrow(df)+1,] <- c(AGname, "Loosers",     min(L$Energy),  max(L$Energy),   nrow(L),  length(unique(L$Slide)));
+    df[nrow(df)+1,] <- c(AGname, "NonBinders",  min(NB$Energy), max(NB$Energy),  nrow(NB), length(unique(NB$Slide)));
+    
+}
+    
+```
+
+#First, make a list of selected binders
+```{r}
+BindersPerAG = 500
+
+#Calculates cross-reactivity on the fly, then will 
+
+#type will be: binderToOther / Looser / non-binder / polyreactive
+pool <- data.frame(AGname=character(), Slide=character(), Energy = numeric(), Structure= character(), type=character(), label=character());
+
+libraryAllBinders <- data.frame(AGname = character(), Slide = character())
+
+for(AGname in lib){
+    print(AGname)
+    
+    fileMascotte = paste0(AGname, "_MascotteExclusive", typeSeq, ".txt")
+
+    Binders <- read.table(paste0(folder, AGname, "Analyses/", fileMascotte), header=TRUE);
+    Binders <- Binders %>% group_by(Slide) %>% slice(1) %>% ungroup()
+    
+    libraryAllBinders <- rbind(libraryAllBinders, Binders %>% mutate(AGname = AGname) %>% select(AGname, Slide) %>% group_by(AGname, Slide) %>% slice(1))
+    
+    nBinders = nrow(Binders)
+    sampledBinders <- Binders %>% sample_n(min(BindersPerAG, nBinders)) %>% mutate(AGname = AGname, type = "Binder", label = "Positive") %>% select(AGname, Slide, Energy, Structure, type, label)
+    
+    #print(colnames(sampledBinders))
+    #head(sampledBinders)
+    pool <- rbind(pool, sampledBinders)
+}
+```
+
+```{r}
+write.table(pool, "BackupPool.txt", sep="\t", row.names=FALSE, quote=FALSE)
+```
+
+
+```{r}
+write.table(libraryAllBinders, "libraryAllBinders.txt", sep="\t", row.names=FALSE, quote=FALSE)
+
+```
+
+```{r}
+pool
+```
+
+```{r}
+#Strategy 1 (DLAB): take the sequences from the pool, and for they become negative, except if they are already selected for other antigens => if the same sequence is both positive and negative for an antigen, we will remove the negative one - this is the stupid way of doing! - we will recalculate the energy anyway, so we will know if it binds then.
+
+listSelectedSeqs = unique(pool$Slide)
+    
+negativesToAdd <- data.frame(AGname=character(), Slide=character(), Energy = numeric(), Structure= character(), type=character(), label=character());
+
+for(AGname in lib){
+    newToAdd <- data.frame(listSelectedSeqs)
+    colnames(newToAdd) <- c("Slide")
+    
+    nonBinders <- newToAdd %>% mutate(AGname = AGname, Energy = NaN, Structure = "none", type = "NonBinder", label = "BinderOfOtherAG") %>% select(AGname, Slide, Energy, Structure, type, label)
+    
+    print(AGname)
+    negativesToAdd <- rbind(negativesToAdd, nonBinders) 
+}
+
+```
+
+
+
+
+```{r}
+length(listSelectedSeqs)
+```
+
+```{r}
+negativesToAdd
+```
+
+
+# We classify as non-binder something that might actually be cross-reactive, since we only took selected once. This is fine. We might need to annotate it later 
+
+# Problem: pool has repeated Slides for the same antigen (grrrr)
+
+# Now each binder will be duplicated as non-binder so we need to discard this
+
+```{r}
+total <- rbind(pool, negativesToAdd)
+```
+
+```{r}
+total
+```
+```{r}
+AGname = ""
+```
+
+#Checking that a sequence is not repeated within one antigen
+```{r}
+total <- total %>% group_by(AGname, Slide) %>% mutate(repeated = n())
+```
+
+```{r}
+total
+```
+
+
+```{r}
+total %>% filter(repeated > 2)
+```
+```{r}
+test <- total %>% filter(Slide == "ARYLLKGLYFD")
+test
+```
+
+```{r}
+test %>% group_by(Slide, label) %>% mutate(nLabels = n_distinct(label))
+```
+
+```{r}
+#total <- total %>% slice(1) %>% ungroup()
+```
+
+```{r}
+totalForSplitting <- total %>% group_by(Slide, AGname) %>% mutate(nLabels = n_distinct(label)) 
+repeated = totalForSplitting %>% filter(nLabels > 1)  #
+single =  totalForSplitting  %>%  filter(nLabels == 1)  #
+```
+
+```{r}
+repeated
+```
+
+```{r}
+single
+```
+
+```{r}
+repeated %>% filter(Slide == "AILLEGHYYAM")
+```
+
+
+```{r}
+reconstituted <- rbind(repeated %>% filter(label == "Positive"), single)
+head(reconstituted)
+```
+
+
+```{r}
+write.table(reconstituted, "DatabaseDLAB.txt", sep="\t", quote=FALSE, row.names=FALSE)
+```
+
+
+```{r}
+reconstituted 
+```
+
+
+```{r}
+reconstituted %>% filter(Slide == "HYDYPLCLDYW")
+```
+
+
+#Now, add two new classes of non-binders and also annotate the polyreactive sequences within the "BinderOfAnotherAG" 
+```{r}
+reconstituted <- read.table("DatabaseDLAB.txt", header=TRUE)
+```
+
+```{r}
+thresholds <- read.table("ListThresholds.txt", header=TRUE)
+thresholds
+```
+
+
+
+```{r}
+#we will take twice this, once loosers and once real nonbinders
+nNonBindersPerAG = 2500
+
+newNonBinders <- data.frame(AGname=character(), Slide=character(), Energy = numeric(), Structure= character(), type=character(), label=character());
+typeSeq = "Slices"
+
+for(AGnameHere in lib){
+#AGnameHere = "3NCY_A"
+    print(AGnameHere)
+    
+    fileLoosers =      paste0(AGnameHere, "_LooserExclusive", typeSeq, ".txt")
+    fileNonBinders =   paste0(AGnameHere, "_500kNonMascotte", typeSeq, ".txt")
+    
+    thresholdBind <- (thresholds %>% filter(AGname == AGnameHere, type == "Mascotte"))$maxEnergy[1]
+    thresholdLooser <- (thresholds %>% filter(AGname == AGnameHere, type == "Loosers"))$maxEnergy[1]
+    print(paste("   -> thresholds: Binding is < ", thresholdBind, "Loosers go down to >=", thresholdLooser))
+
+    Loosers <- read.table(paste0(folder, AGnameHere, "Analyses/", fileLoosers), header=TRUE);
+    Loosers <- Loosers %>% group_by(Slide) %>% slice(1) %>% ungroup() %>% sample_n(nNonBindersPerAG)
+    
+    newLoosers <- Loosers %>% select(Slide, Energy, Structure) %>% mutate(AGname = AGnameHere, type = "NonBinder", label = "LooserSameAG") %>% select(AGname, Slide, Energy, Structure, type, label)
+    
+    newNonBinders <- rbind(newNonBinders, newLoosers) 
+    print(paste("Added", nrow(newLoosers), "Loosers"))
+    
+    lowAffNonBinders <- read.table(paste0(folder, AGnameHere, "Analyses/", fileNonBinders), header=TRUE);
+    lowAffNonBinders <- lowAffNonBinders %>% group_by(Slide) %>% slice(1) %>% ungroup() %>% filter(Energy > thresholdLooser) %>% sample_n(nNonBindersPerAG)
+    
+    newLowAff <- lowAffNonBinders %>% select(Slide, Energy, Structure) %>% mutate(AGname = AGnameHere, type = "NonBinder", label = "LowAffSameAG") %>% select(AGname, Slide, Energy, Structure, type, label)
+    
+    print(paste("Added", nrow(newLowAff), "Low affinity binders (non loosers) from", min(newLowAff$Energy), "to", max(newLowAff$Energy)))
+
+    newNonBinders <- rbind(newNonBinders, newLowAff) 
+}
+```
+
+```{r}
+write.table(newNonBinders, "newNonBinders", sep="\t", quote=FALSE, row.names=FALSE)
+```
+
+```{r}
+nrow(newNonBinders)
+```
+
+```{r}
+newNonBinders
+```
+
+
+```{r}
+#Now adds the same amount of loosers and real non-binders
+
+nNonBindersPerAG = 2500
+
+newNonBinders <- data.frame(AGname=character(), Slide=character(), Energy = numeric(), Structure= character(), type=character(), label=character());
+typeSeq = "Slices"
+
+recreateReconstituted <- reconstituted %>% filter(label == "Positive")
+print(paste("First, takes all binders, got", nrow(recreateReconstituted)))
+
+for(AGname in lib){
+    print(AGname)
+    
+    #fileMascotte = paste0(AGname, "_MascotteExclusive", typeSeq, ".txt")
+    fileLoosers =      paste0(AGname, "_LooserExclusive", typeSeq, ".txt")
+    fileNonBinders =   paste0(AGname, "_500kNonMascotte", typeSeq, ".txt")
+    
+    #Threshold between mascotte and loosers
+    thresholdBind <- (thresholds %>% filter(AGname == AGname, type == "Heroes"))$maxEnergy[1]
+    print(thresholdBind)
+    
+    thresholdLooser <- (thresholds %>% filter(AGname == AGname, type == "Loosers"))$maxEnergy[1]
+    print(thresholdLooser)
+    
+    #We cannot do it because we didn't store the energy of nonbinders (not even available, it will be post analysis)
+    #Re-annonates the previous non-binders in case they are actually binders but we didn't know
+    goodNonBindersForThisAG <- reconstituted %>% filter(AGname == AGname, label == "BinderOfOtherAG", Energy > thresholdBind)  
+    polyreactiveNonBindersForThisAG <- reconstituted %>% filter(AGname == AGname, label == "BinderOfOtherAG", Energy <= thresholdBind) 
+        
+    print(paste("Got", nrow(polyreactiveNonBindersForThisAG), "nonbinders that were actually binding for AG", AGname, "remaining ", nrow(goodNonBindersForThisAG), "real non-binders"))
+    
+    recreateReconstituted <- rbind(recreateReconstituted, goodNonBindersForThisAG)
+    
+    polyreactiveNonBindersForThisAG <- polyreactiveNonBindersForThisAG %>% select(AGname, Slide, Energy, Structure) %>% mutate(type = "PolyreactiveMissedBinder", label="FalseNegative")
+}
+```
+
+
+

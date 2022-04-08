@@ -256,7 +256,7 @@ void affinityOneLigand::initialize(superProtein* _ligand, int _sizeReceptors, in
 
     // ============= Part 5 (optional): Generates a dictionary between interaction profile and structure to retrieve later all structures with the best interaction profile ===================
 
-//#ifdef showBestStructures
+    //#ifdef showBestStructures
     cout << "   ... (optional:) Creating a dictionary between compacted structures to original structure [only for debugging]" << endl;
     cout << "       Reading file " << fileStructures << endl;
 
@@ -266,6 +266,8 @@ void affinityOneLigand::initialize(superProtein* _ligand, int _sizeReceptors, in
     if(!f){
         cerr << "ERR: Can not open " << fileStructures << endl;
         exit(-1);
+        //cerr << "ERR: Will continue without matching between structure and interaction code" << endl;
+        //cerr << "ERR: => you can not retrieve the binding structures, only binding energy" << endl;
     } else {
         string useless;
         int nForbidden = 0;
@@ -283,7 +285,7 @@ void affinityOneLigand::initialize(superProtein* _ligand, int _sizeReceptors, in
         string structure;
         string interactions;
 
-        if(!interactions.compare(string("fLhLhViGaKiKcPiPdChCeYbgbidg"))) {cerr << "FOUND!" ; exit(-1);}
+        //if(!interactions.compare(string("fLhLhViGaKiKcPiPdChCeYbgbidg"))) {cerr << "FOUND!" ; exit(-1);}
 
         while((f >> startPos)){
             f >> structure;
@@ -377,6 +379,13 @@ void testSLice(){
 
 
 
+
+string pose::print(){
+    stringstream res;
+    res << startPos << "-" << structure << "\t" << interactionCode << "\t" << affInteract << "\t" << totalAff;
+    return res.str();
+}
+
 // ===================================    one function to rule them all !  ======================================
 
 // This function takes a receptor sequence. It browses all possible interaction profiles between ligand and receptor, fills them
@@ -384,13 +393,17 @@ void testSLice(){
 // and a boltzmann average of the binding energies of each interaction profile (weighted by total energies) returns a statistical affinity.
 
 // Option: when showing all structures, will do with the best ones first. Alternately, can show it without sorting (put false)
-#define showSorted false
-std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool showStructures, vector<string>* returnBestStructures){
+#define showSorted true
+std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool showStructures, vector<string>* returnBestStructures, size_t nPoses, vector<pose> *returnTopPoses){
 
-    //if(modeUltraFast) cout << "Mode Ultrafast is ON" << endl;
     if(modeUltraFast) showStructures = false;
 
-    // if wrong size of sequence
+    if(returnTopPoses != nullptr){
+        if(modeUltraFast) cerr << "WRN: calling affinity in ultraFast mode AND returning the best poses is not possible. Going slow mode (showStructures = true)\n";
+        showStructures = true;
+    }
+
+    // if wrong size of sequence, return NAN
     if(static_cast<int>(receptorAASeq.size()) != sizeReceptors+1){
         cerr << "ERR: affinityOneLigand::affinity(" << receptorAASeq << "), wrong size of AA sequence ! the interactions profiles have only been loaded for receptors of size " << sizeReceptors + 1 << " AAs (i.e. with -1 number of moves)" << endl;
         return std::pair<double, double>(NAN, NAN);
@@ -399,54 +412,68 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
 
     // --------- Part 1: During the lifetime of the program, it stores all affinities it has computed so far in memory, to avoid recomputing.
 
-    // if already computed before
-    pthread_mutex_lock(&lockAccessPrecompAffinities);
+    // Three memory storages:
+    // knownBestAffinities => the binding and total energies for each sequence
 
-    std::map<string,double>::iterator it = (knownBestAffinities.find(receptorAASeq));
-    std::map<string,double>::iterator itEnd = knownBestAffinities.end();
+    // and, when not in ultrafast mode:
+    // knownStatisticalAffinities => the statistical energy
+    // knownBestInteractions => the list of optimal binding poses as one string, separated by spaces
 
-    pthread_mutex_unlock(&lockAccessPrecompAffinities);
-    if (it != itEnd){ // found
+    // note: the top, non-optimal poses are not stored (would be too big) - so we skip this step (do not read memory) if we want poses
 
+    // Checks if already computed before.
+    if(returnTopPoses != nullptr){
+
+        // In case of multithreading, locks the memory so other threads will not write on it at the same time
         pthread_mutex_lock(&lockAccessPrecompAffinities);
-        std::map<string, string>::iterator it3 = (knownBestInteractions.find(receptorAASeq));
-        if(it3 == knownBestInteractions.end()) cerr << "ERR: affinity(), the best affinity for sequence " << receptorAASeq << " is known but not the best interaction codes => Will return empty interaction codes, might cause problem" << endl;
-        else {
-            // BAAAAAAAAAAAAAAAAAAAAD, this is a copy paste...
-            // --------- Part Optional: If requests the list of optimal structures, retrives it.
-            if(returnBestStructures != nullptr){
-                returnBestStructures->clear();
-                vector<string> tokens = slice(it3->second, "  ");
-                size_t nCodes = tokens.size();
-                for(size_t k = 0; k < nCodes; ++k){
-                    string token = tokens[k];
-                    if(showStructures) cout << token;
-                    vector<std::pair<int,string> > structuresForThisProfile = profileToStructure[token];
-                    size_t K = structuresForThisProfile.size();
-                    for(size_t k = 0; k < K; ++k){
-                        std::pair<int,string> structure = structuresForThisProfile[k];
-                        stringstream s;
-                        s << structure.first << "-" << structure.second; // << "\t" << it3->second;
-                        if(showStructures)cout << "-" << structure.first << "-" << structure.second << "-" << it3->second;
-                        returnBestStructures->push_back(s.str());
+
+        std::map<string,double>::iterator it = (knownBestAffinities.find(receptorAASeq));
+        std::map<string,double>::iterator itEnd = knownBestAffinities.end();
+
+        pthread_mutex_unlock(&lockAccessPrecompAffinities);
+        if (it != itEnd){ // found
+
+            pthread_mutex_lock(&lockAccessPrecompAffinities);
+            std::map<string, string>::iterator it3 = (knownBestInteractions.find(receptorAASeq));
+            if(it3 == knownBestInteractions.end()) cerr << "ERR: affinity(), the best affinity for sequence " << receptorAASeq << " is known but not the best interaction codes => Will return empty interaction codes, might cause problem" << endl;
+            else {
+                // --------- Part Optional: If requests the list of optimal structures, retrives it.
+                if(returnBestStructures != nullptr){
+                    returnBestStructures->clear();
+                    vector<string> tokens = slice(it3->second, "  ");
+                    size_t nCodes = tokens.size();
+                    for(size_t k = 0; k < nCodes; ++k){
+                        string token = tokens[k];
+                        if(showStructures) cout << token;
+                        vector<std::pair<int,string> > structuresForThisProfile = profileToStructure[token];
+                        size_t K = structuresForThisProfile.size();
+                        for(size_t k = 0; k < K; ++k){
+                            std::pair<int,string> structure = structuresForThisProfile[k];
+                            stringstream s;
+                            s << structure.first << "-" << structure.second; // << "\t" << it3->second;
+                            if(showStructures)cout << "-" << structure.first << "-" << structure.second << "-" << it3->second;
+                            returnBestStructures->push_back(s.str());
+                        }
+                        if(showStructures) cout << endl;
                     }
-                    if(showStructures) cout << endl;
                 }
             }
+            std::pair<double, double> res;
+            if(!modeUltraFast){
+                std::map<string,double>::iterator it2 = (knownStatisticalAffinities.find(receptorAASeq));
+                if(it2 == knownStatisticalAffinities.end()) cerr << "ERR: bestAffinity known but statistical affinity not known for " << receptorAASeq << endl;
+                //cout << "Affinity for " << receptorAASeq << " already computed: " << it->second << endl;
+                res = std::pair<double, double> (it->second, it2->second);
+            } else {
+                res = std::pair<double, double> (it->second, NAN);
+            }
+            // make sure to unlok before using return.
+                pthread_mutex_unlock(&lockAccessPrecompAffinities);
+            return res;
         }
-        std::pair<double, double> res;
-        if(!modeUltraFast){
-            std::map<string,double>::iterator it2 = (knownStatisticalAffinities.find(receptorAASeq));
-            if(it2 == knownStatisticalAffinities.end()) cerr << "ERR: bestAffinity known but statistical affinity not known for " << receptorAASeq << endl;
-            //cout << "Affinity for " << receptorAASeq << " already computed: " << it->second << endl;
-            res = std::pair<double, double> (it->second, it2->second);
-        } else {
-            res = std::pair<double, double> (it->second, NAN);
-        }
-        // make sure to unlok before using return.
-            pthread_mutex_unlock(&lockAccessPrecompAffinities);
-        return res;
     }
+
+
     // ---------  Part 2:To speed-up the filling of interaction profiles with the AA sequence of the receptor (the input), makes a dictionnary: position in the receptor => Amino Acid at this position.
 
 
@@ -565,6 +592,8 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
 
 /*
     //  --------- Part 4: Checks if a self-folding would produce a better total energy
+    // we have stopped doing it because self-folded 11-mers are never favorable compared to any binding on a protein.
+
     bool bestFromSelfFold = false;
     if(showStructures) cout << "Self-foldings       \tInteract\tFolding\tTotal\tProba\tsumZ\tsumAff" << endl;
     for(size_t i = 0; i < static_cast<size_t>(nFoldingCodes); ++i){
@@ -609,19 +638,18 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
     }
 */
 
-    // ======> Finished! Best binding energy is now known.
+    // ======> Finished! Best binding energy is known now, saving in memory.
 
-    //cout << "bestTotalAff " << minAffinity << " and resulting bindingAff " << avgBinding << " (min " << minBinding << " from profiles: " << bestAffProfile << endl;
-    // cout << receptorAASeq << "\t" << avgBinding << "\t" << bestAffProfile << endl;
-        pthread_mutex_lock(&lockAccessPrecompAffinities);
+    // cout << "bestTotalAff " << minAffinity << " and resulting bindingAff " << avgBinding << " (min " << minBinding << " from profiles: " << bestAffProfile << "\t" receptorAASeq << "\t" << avgBinding << "\t" << bestAffProfile << endl;
+    pthread_mutex_lock(&lockAccessPrecompAffinities);
 
     knownBestAffinities.insert(std::pair<string,double>(receptorAASeq, avgBinding));
 
-        pthread_mutex_unlock(&lockAccessPrecompAffinities);
+    pthread_mutex_unlock(&lockAccessPrecompAffinities);
 
 
 
-    // --------- Part Optional: If requests the list of optimal structures, retrives it.
+    // --------- Part Optional: If requests the list of optimal structures, retrieves it.
     if(returnBestStructures != nullptr){
         returnBestStructures->clear();
 
@@ -643,11 +671,11 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
         }
     }
 
-        pthread_mutex_lock(&lockAccessPrecompAffinities);
+    pthread_mutex_lock(&lockAccessPrecompAffinities);
 
     knownBestInteractions.insert(std::pair<string, string>(receptorAASeq, bestAffProfile));
 
-        pthread_mutex_unlock(&lockAccessPrecompAffinities);
+    pthread_mutex_unlock(&lockAccessPrecompAffinities);
 
 
 
@@ -684,11 +712,11 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
     double statAff = morePreciseSumAff / (morePreciseSumWei + 1e-12);
 
 
-        pthread_mutex_lock(&lockAccessPrecompAffinities);
+    pthread_mutex_lock(&lockAccessPrecompAffinities);
 
     knownStatisticalAffinities.insert(std::pair<string,double>(receptorAASeq, statAff));
 
-        pthread_mutex_unlock(&lockAccessPrecompAffinities);
+    pthread_mutex_unlock(&lockAccessPrecompAffinities);
 
 
 
@@ -696,62 +724,83 @@ std::pair<double, double> affinityOneLigand::affinity(string receptorAASeq, bool
 
     // =============== Now, the computation is finished. The remaining block is only to display info about best structures ===================
     if(showStructures){
+
+        if(returnTopPoses == nullptr) cout << "Optimal structures" << endl;
         // Show the best structures from binding affinity
         // This sorting is computationally very expensive.
-        if(showSorted) std::sort(bindTotSeqList.begin(), bindTotSeqList.end(), compBind);
+        if(showSorted) std::sort(bindTotSeqList.begin(), bindTotSeqList.end(), compTot); // can use compBind or compTot
         if(bindTotSeqList.size() > 0){
-            cout << receptorAASeq << "\t" << avgBinding << "\t" << bindTotSeqList[0].second.second;
+            if(returnTopPoses == nullptr) cout << receptorAASeq << "\t" << avgBinding << "\t" << bindTotSeqList[0].second.second;
             std::map<string, vector<std::pair<int, string> > >::iterator it = profileToStructure.find(bindTotSeqList[0].second.second);
             if(it !=profileToStructure.end() ){
                 vector<std::pair<int,string>> listStr = it->second;
-                cout << "\t" << listStr.size();
+                if(returnTopPoses == nullptr) cout << "\t" << listStr.size();
                 for(size_t j = 0; j < listStr.size(); ++j){
-                    cout << "\t" << listStr[j].first << "-" << listStr[j].second;
+                    if(returnTopPoses == nullptr) cout << "\t" << listStr[j].first << "-" << listStr[j].second;
                     //bestSequences.push_back(new struct3D(listStr[j].second, UnDefined, listStr[j].first));
                 }
             }
-            cout << endl;
+            if(returnTopPoses == nullptr) cout << endl;
         }
 
-        #ifdef ALLOW_GRAPHICS
-        if(true){
-            cerr << "Now displaying 2500 / " << bindTotSeqList.size() << " found structures " << endl;
+        // two strategies:
+        // if the return poses is given, does not print but saves into topPoses
+        // if topPoses is not given, shows nPoses (or 2500 by default)
+        if(showStructures){
+            if((returnTopPoses == nullptr) && (nPoses == 0)) nPoses = 2500;
+            if(returnTopPoses == nullptr) cout << "Now displaying the top (max) " << nPoses << " / " << bindTotSeqList.size() << " found structures " << endl;
+            superProtein* ligandProt = new superProtein(*ligand);
+
+            #ifdef ALLOW_GRAPHICS
             char *c[] = {(char*)"Hello",nullptr};
             glDisplay(0,c);
             //addToDisplay(merged);
-            superProtein* ligandProt = new superProtein(*ligand);
             addToDisplay(ligandProt, true);
+            #endif
 
             vector<struct3D*> subSequences;
-            int NS4 = bindTotSeqList.size();
-            for(int i = 0; i < min(300000, NS4); ++i){
+            if(returnTopPoses != nullptr){
+                returnTopPoses->reserve(nPoses);
+            }
+            // reminder on the data structures:
+            // bindTotSeqList is a vector of pair<double, pair<double, string> > containing ( affInteract, ( totalAff , interaction code));
+            // profileToStructure is a map<string, vector<pair<int,string> > > containing interaction code => list of structures (int, structure)
+            size_t NS4 = bindTotSeqList.size();
+            for(size_t i = 0; i < min(nPoses, NS4); ++i){
                 std::map<string, vector<std::pair<int, string> > >::iterator it = profileToStructure.find(bindTotSeqList[i].second.second);
+                if(returnTopPoses == nullptr) cout << bindTotSeqList[i].first << "\t" << bindTotSeqList[i].second.first << "\t" << bindTotSeqList[i].second.second;
                 if(it !=profileToStructure.end() ){
                     vector<std::pair<int,string>> listStr = it->second;
-                    for(int j = 0; j < (int) listStr.size(); ++j){
+                    for(size_t j = 0; j < listStr.size(); ++j){
                         subSequences.push_back(new struct3D(listStr[j].second, UnDefined, listStr[j].first));
+                        if(returnTopPoses == nullptr) cout << "\t" << listStr[j].first << "-" << listStr[j].second;
+                        if(returnTopPoses != nullptr){
+                            pose p = pose(listStr[j].first, bindTotSeqList[i].first, bindTotSeqList[i].second.first, listStr[j].second, bindTotSeqList[i].second.second);
+                            //stringstream codeStr; codeStr << listStr[j].first << "-" << listStr[j].second;
+                            returnTopPoses->push_back(p);
+                        }
                     }
                 } else {
                     cerr << "ERR: " << bindTotSeqList[i].second.second << " not found in dictionary [1]" << endl;
                 }
+                if(returnTopPoses == nullptr) cout << endl;
             }
 
 
-            int NRs = subSequences.size();
-            for(int i = 0; i < min(2500,NRs); ++i){
-                int rd = i;// random::uniformInteger(0, NRs-1);
+            #ifdef ALLOW_GRAPHICS
+            size_t NRs = subSequences.size();
+            for(size_t i = 0; i < min(static_cast<size_t> (2500),NRs); ++i){
+                size_t rd = i;// random::uniformInteger(0, NRs-1);
                 if(!subSequences[rd]) {cerr << "WTF for best sequences " << rd << endl; }
                 else {
                     superProtein* receptorProt = new superProtein(*subSequences[rd]);
                     addToDisplay(receptorProt, false);
                 }
             }
+            #endif
             // Note: the program will stop here.
-            glutMainLoop();
+            //glutMainLoop();
         }
-        #endif
-
-
 
         /* This piece of code was made to make a heatmap where the possible structures of one receptor sequence bind (according to boltzman).
          * The code works but is a bit useless because the only very similar structures get a good total energy.

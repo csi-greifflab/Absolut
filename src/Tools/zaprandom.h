@@ -10,7 +10,8 @@ struct random
     static bool initialized;
 
     static void   initialize    (unsigned int init_seed=0);
-    static int    uniformInteger(int, int);
+    static int    uniformInteger(int, int);	
+	static size_t uniformUInteger(size_t a, size_t b);
     static double uniformDouble (double, double);
     static double normal        (double, double);
     static double bernouilli    (double p);

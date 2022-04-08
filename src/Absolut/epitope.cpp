@@ -498,9 +498,9 @@ void showParatopeEpitope(superProtein* prot1, superProtein* prot2, vector<int> f
     set<int> vicinity2 = neighborPositions(PosProt2);
 
     // epitope
-    set<int> interface1 = intersection_sets(PosProt1, vicinity2);
+    set<int> interface1 = intersection_sets<int>(PosProt1, vicinity2);
     // paratope
-    set<int> interface2 = intersection_sets(PosProt2, vicinity1);
+    set<int> interface2 = intersection_sets<int>(PosProt2, vicinity1);
 
     cout << "Interface 1 is: " << print(interface1) << endl;
     cout << "Interface 2 is: " << print(interface2) << endl;

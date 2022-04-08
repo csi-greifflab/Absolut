@@ -1,0 +1,124 @@
+```{r}
+library(dplyr)
+library(stringr)
+library(ggplot2)
+```
+
+```{r}
+listFiles <- c("Task4_A_EpiSeq_ParaSeq.txt_Balanced_2000.txtClustered.txt",
+"Task4_A_EpiSeq_ParaSeqD2.txt_Balanced_2000.txtClustered.txt",
+"Task4_C_EpiAgr_ParaAgr.txt_Balanced_2000.txtClustered.txt",
+"Task4_C_EpiAgr_ParaAgrD2.txt_Balanced_2000.txtClustered.txt",
+"Task4_D_EpiChem_ParaChem.txt_Balanced_2000.txtClustered.txt",
+"Task4_D_EpiChem_ParaChemD2.txt_Balanced_2000.txtClustered.txt",
+"Task4_E_EpiSeq_ParaSeq_NoDeg.txt_Balanced_2000.txtClustered.txt",
+"Task4_E_EpiSeq_ParaSeq_NoDegD2.txt_Balanced_2000.txtClustered.txt",
+"Task4_G_EpiAgr_ParaAgr_NoDeg.txt_Balanced_2000.txtClustered.txt",
+"Task4_G_EpiAgr_ParaAgr_NoDegD2.txt_Balanced_2000.txtClustered.txt",
+"Task4_H_EpiChem_ParaChem_NoDeg.txt_Balanced_2000.txtClustered.txt",
+"Task4_H_EpiChem_ParaChem_NoDegD2.txt_Balanced_2000.txtClustered.txt");
+```
+
+```{r}
+fileName = listFiles[13]
+```
+
+```{r}
+a <- read.table(fileName)
+
+```
+
+
+
+```{r}
+a[0:10,]
+```
+
+```{r}
+test <- a %>% group_by(V1, V3) %>% select(V1, V3) %>% slice(1)
+test
+#Sometimes, the clustering returns "-1", non-assigned probably. So the cluster ID overlaps with the previous class, damned.
+```
+
+```{r}
+b <- a %>% group_by(V1) %>% mutate(nClusters = n_distinct(V3)) %>% slice(1) %>% ungroup() %>% mutate(endClusterID = cumsum(nClusters)-1, beginClusterID = endClusterID - nClusters+1) %>% select(V1, nClusters, beginClusterID, endClusterID)
+b
+```
+
+```{r}
+test2 <- full_join(a, b, by = c('V1'))
+test2
+```
+
+```{r}
+nrow(test2)
+```
+
+```{r}
+excludedClusterMinusOne <- test2 %>% filter((V3 >= beginClusterID) & (V3 <= endClusterID))
+nrow(excludedClusterMinusOne)
+```
+
+```{r}
+
+```
+
+
+```{r}
+plotA <- ggplot(b, aes(x=nClusters, y=stat(density))) +
+    geom_histogram(binwidth=1, alpha=.5, position="identity") + theme_classic() + theme(legend.position=c(.9,.75)) + scale_fill_manual(values=c( rgb(0.00, 0.40, 0.65),"#F8766D",   "#05D5C4"))
+plotA
+```
+
+#Strategies: we want to separate train and test for each class (Harders way to do)
+```{r}
+nrow(a)
+```
+
+```{r}
+c <- a %>% group_by(V1) %>% mutate(nClusters = n_distinct(V3)) %>% filter(nClusters > 1)
+```
+
+
+```{r}
+nrow(c)
+```
+
+```{r}
+listClusters <- unique(excludedClusterMinusOne$V3)
+listClusters
+```
+
+```{r}
+#Keep the clusters in each class
+selectedClusters <- excludedClusterMinusOne %>% group_by(V1, V3) %>% mutate(sizeCluster = n()) %>% slice(1) %>% ungroup() #%>% sample_frac(V3, 0.5)
+selectedClusters
+```
+```{r}
+selectedClusters <- selectedClusters %>% group_by(V1) %>% sample_frac(0.5) 
+```
+
+
+```{r}
+listTrainingClusters <- selectedClusters$V3
+length(listTrainingClusters)
+```
+
+
+```{r}
+trainData <- excludedClusterMinusOne %>% filter(V3 %in% listTrainingClusters)
+testData <- excludedClusterMinusOne %>% filter(! V3 %in% listTrainingClusters)
+```
+
+```{r}
+nrow(excludedClusterMinusOne)
+nrow(trainData)
+nrow(testData)
+```
+
+```{r}
+write.table(trainData, paste0(fileName,"Train.txt"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+write.table(testData, paste0(fileName,"Test.txt"), sep="\t", quote=FALSE, row.names=FALSE, col.names=FALSE)
+
+```
+

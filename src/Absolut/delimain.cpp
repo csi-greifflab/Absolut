@@ -1,5 +1,8 @@
 // This is Absolut (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
 
+// Main version.year[a-z].month.day[a-z]
+#define absolut_version "2.2022a.Jan.09a"
+
 // Three ways to compile it:
 //      Using Absolut.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
 //          this .pro file automatically includes "#define ALLOW_GRAPHICS", that will include the openGL code (see plot3d2h).
@@ -27,6 +30,7 @@
 #include "html.h"
 #include "fileformats.h"
 #include "topology.h"
+#include "dlab.h"
 #include <iostream>
 #include <fstream>
 
@@ -37,11 +41,18 @@
 // This option includes the crystal structure from the PDB antibody that was binding the antigen
 #define defaultIncludePDBantibody false
 
+// For simulations with many antigens, it is recommended to ask the program to remove automatically the two
+// sub-structure files generated during pre-processing.
+// However, do NOT put true if you wish to run multiple simulations with the exact same antigen(and sequence) at the same
+// time, because one simulation would delete the file of the other one (since they are the same)
+// #define RemoveCompactFilesOnTheWay
+
 // for sleep
 #ifdef _WIN32
 #include <Windows.h>
 #else
 #include <unistd.h>
+#include <sys/stat.h>
 #endif
 
 #include <cstdlib>
@@ -95,7 +106,7 @@ string getHelp(int argc, char** argv){
     res << "           - please keep this order of options -\n";
     res << " \n";
     res << " Option 2: Generate a dataset of bindings of a repertoire of CDR3 sequences around an antigen (from the library)\n";
-    res << " " << programName << " repertoire ID_antigen RepertoireFile [nThreads] [startIDSeq endIDseq]\n";
+    res << " " << programName << " repertoire ID_antigen RepertoireFile [nThreads] [prefix] [startIDSeq endIDseq]\n";
     res << "           ex: " << programName << " repertoire 1CZ8_VW sequences.txt\n";
     res << "           ex: " << programName << " repertoire 1CZ8_VW sequences.txt 10\n";
     res << "           ex: " << programName << " repertoire 1CZ8_VW sequences.txt 10 IDinFileNames\n";
@@ -151,6 +162,16 @@ string getHelp(int argc, char** argv){
     res << " " << programName << "develop interactionCode sizeRecetors nrSequencesToGenerate\n";
     res << "            ex: develop iFkFhEcSgSdNfNdNdTaNcNaNcGcWbVgAhKhDjDkVkIbebgfi 11 20\n";
     res << " \n";
+    res << " Option 11: Generate a list of poses of a repertoire to an antigen\n";
+    res << " " << programName << " poses antigenID repertoireFile nPoses latticeSize\n";
+    res << "           ex: " << programName << " poses 1ADQ_A repertoire.txt 250 6\n";
+    res << " \n";
+    res << " Option 12: Generate bindings of set of sequences to antigens with new sequences on existing structures\n";
+    res << " " << programName << " tasks fileWithTasks [nThreads] [folderOutput] [startIDtask endIDtask]\n";
+    res << "           ex: " << programName << " tasks listTasks.txt \n";
+    res << "           ex: " << programName << " tasks listTasks.txt folderOutput/\n";
+    res << "           ex: " << programName << " tasks listTasks.txt folderOutput/ 50 100 \n";
+    res << " \n";
     res << " Others: Simple tools.\n";
     res << " " << programName << "info_position   X Y Z  => Transform into lattice position\n";
     res << " " << programName << "info_position   N      => Transform lattice position N into X,Y,Z \n";
@@ -170,6 +191,9 @@ int option1(string PDB_ID = "", string chains = "", double resolution = 5.25, st
 
 // repertoire
 void option2(string ID_antigen, string repertoireFile, int nThreads = 1, string prefix = string(""), int startingLine = 0, int endingLine = 1000000000);
+
+// tasks
+void processTasks(string fileName, int nThreads = 1, string prefix = string(""), int startIDsim = 0, int endIDsim = 100000000);
 
 // listAntigens
 void option3(){showListIDs();}
@@ -242,6 +266,26 @@ void infosAllAntigens(){
 void option10a(string interactionCode, int sizeReceptors, int nrSequences);
 void option10b(string antigenID, string structureID, int nrSequences); // the sizeReceptors will be taken from the structureID
 
+// PDB antigenID, ligandStructure, ligandAAseq
+// the ligandstructure SHOULD INCLUDE THE POSITION:
+void option12(string antigenID, string ligandPos_Structure, string ligandAAseq){
+
+#ifndef NOQT
+    std::pair<superProtein*, vector<int> > AG = getAntigen(antigenID);
+    std::pair<int, string> ligand = retrieveStructureFromPosAndStructure(ligandPos_Structure, '-');
+    cout << ligand.first << "\t" << ligand.second << "\t" << ligandAAseq << endl;
+    superProtein* P2 = new superProtein(ligand.second, ligand.first);
+    P2->setAAs(ligandAAseq);
+
+    string file1 = generatePDBfromLattice({5.25, 0.0, 0.0}, {0.0, 5.25, 0.0}, {50, 50, 50}, AG.first, P2);
+    ofstream f1("ManualGenerate.pdb"); f1 << file1; f1.close();
+#else
+    cerr << "ERR: you are probably compiling without libraries (AbsolutNoLib.pro) and the option 12 is not accessible." << endl;
+#endif
+    return;
+}
+
+void option11(string ID_antigen, string repertoireFileName, size_t nPoses, int latticeSize);
 
 
 void option10a(string interactionCode, int sizeReceptors, int nrSequences){
@@ -326,8 +370,24 @@ void infoOneAntigen(string ID_antigen){
 
 
 
+void testGetPoses(){
+    string AGname = "1ADQ_A";
+    string sequence = string(DefaultReceptorSizeBonds+1, 'A');
+    std::pair<superProtein*, vector<int>> AG = getAntigen(AGname);
+    affinityOneLigand Ttest = affinityOneLigand(AG.first, DefaultReceptorSizeBonds, DefaultContactPoints, -1, 1, AG.second);
+    //cout << Ttest.affinity(string(DefaultReceptorSizeBonds+1, 'A')).first << endl;
+    Ttest.setUltraFast(false);
+    vector<pose>* poses = new vector<pose>();
+    Ttest.affinity(sequence, true, nullptr, 100, poses);
 
-
+    cout << "AGname\tsequence\tpose\tcenteringNr\tantigenLattice\tantibodyLattice\n";
+    for(size_t i = 0; i < poses->size(); ++i){
+        vector< std::pair<string, string> > lattices = latticesComplexes(AG.first, (*poses)[i].startPos, (*poses)[i].structure, sequence);
+        for(size_t j = 0; j < lattices.size(); ++j){
+            cout << AGname << "\t" << sequence << "\t" << (*poses)[i].print() << "\t" << j+1 << "\t" << lattices[j].first << "\t" << lattices[j].second << "\n";
+        }
+    }
+}
 
 
 
@@ -372,6 +432,33 @@ int main(int argc, char** argv){
         case 6: option2(argv[2], argv[3], atoi(argv[4]), argv[5]); break; // default 1 thread
         case 7: option2(argv[2], argv[3], 1, "", atoi(argv[4]), atoi(argv[5])); break; // default 1 thread
         case 8: option2(argv[2], argv[3], atoi(argv[4]), argv[5], atoi(argv[6]), atoi(argv[7])); break;
+        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
+        }
+    }
+
+    // example: tasks "C:/Users/pprobert/Desktop/Cissaruz/ShortListTasks.txt" 10 "C:/Users/pprobert/Desktop/Cissaruz/" 0 1000
+    if(!command.compare("tasks")){
+        success = true;
+        switch(argc){
+        //" tasks listTasks.txt \n";
+        //" tasks listTasks.txt 10 \n";
+        //" tasks listTasks.txt 10 outputFolder/ \n";
+        //" tasks listTasks.txt 10 outputFolder 100 500/ \n";
+        // void option2(string ID_antigen, string repertoireFile, int nThreads = 1, string prefix = string(""), int startingLine = 0, int endingLine = 1000000000)
+        case 3: processTasks(argv[2]); break;
+        case 4: processTasks(argv[2], atoi(argv[3])); break;
+        case 5: processTasks(argv[2], atoi(argv[3]), argv[4]); break;
+        case 7: processTasks(argv[2], atoi(argv[3]), argv[4], atoi(argv[5]), atoi(argv[6])); break;
+        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
+        }
+    }
+
+    if(!command.compare("poses")){
+        success = true;
+        switch(argc){
+        //" poses 1ADQ_A repertoire.txt 250 6/ \n";
+        // void option2(string ID_antigen, string repertoireFile, int nThreads = 1, string prefix = string(""), int startingLine = 0, int endingLine = 1000000000)
+        case 6: option11(argv[2], argv[3], atoi(argv[4]), atoi(argv[5])); break;
         default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
         }
     }
@@ -448,6 +535,15 @@ int main(int argc, char** argv){
             switch(argc){
             case 4: option7b(argv[2], argv[3]); break;
             default: success = false; cerr << "ERR: couldn't get the correct number of arguments. visualize + 2 argument. got in total " << argc-1 << endl;
+            }
+        }
+
+        // PDB antigenID structureLigand AAseqLigand
+        if(!command.compare("PDB")){
+            success = true;
+            switch(argc){
+            case 5: option12(argv[2], argv[3], argv[4]); break;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. PDB + 2 arguments. got in total " << argc-1 << endl;
             }
         }
 
@@ -679,6 +775,7 @@ void *oneThreadJob(void *input){
             }
 
             // 2: Now, knowing who is the best, re-requests affinity of each sliding windows and says 'best' for the equally best ones
+            // Since affinities are stored in memory, it will not trigger recalculation
             for(size_t si = 0; si < nSl; ++si){
 
                 string subSeq = cutSlides[si];
@@ -972,6 +1069,302 @@ void option2(string ID_antigen, string repertoireFile, int nThreads, string pref
 #endif
     #endif
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+struct oneTask{
+   oneTask(int a, string b, string c, string d, string e) : antigenID(b), origin(c), sequence(d), toProcess(e), IDsim(a) {}
+   string antigenID;
+   string origin;
+   string sequence;
+   string toProcess;
+   int IDsim;
+};
+
+// Each process will decide which ID task to take
+
+void processTasks(string fileName, int nThreads, string prefix, int startIDsim, int endIDsim){
+
+    // Default options for our foldings:
+    int receptorSize = DefaultReceptorSizeBonds; //10; // defined in number of bounds, add +1 to get the number of AAs
+    int minInteract = DefaultContactPoints; //11;
+
+    // nJobs will be the ID of this process (if MPI is used, each job will get a different rank), if not, there is only one job with rank 0
+    int nJobs = 1;
+    int rankProcess = 0;
+    #ifdef USE_MPI
+        // If MPI is used (amd compiled with), it will just start independent Jobs, with a certain ID (to split sequences to treat)
+        //MPI_Init(nullptr, nullptr);
+        MPI_Comm_size(MPI_COMM_WORLD, &nJobs);
+        MPI_Comm_rank(MPI_COMM_WORLD, &rankProcess);
+        cout << "MPI started!" << endl;
+    #endif
+
+    // This mutex control the access to shared memory inside affinityOneLigand::affinity()
+    if (pthread_mutex_init(&lockAccessPrecompAffinities, nullptr) != 0){
+        cerr << "\nERR: option repertoire, mutex lockAccessPrecompAffinities init failed, problem with pthreads?" << endl;
+    }
+    // This mutex controls writing the results on the common memory
+    if (pthread_mutex_init(&lockSaveCommonDataset, nullptr) != 0){
+        cerr << "\nERR: option repertoire, mutex lockSaveCommonDataset init failed, problem with pthreads?" << endl;
+    }
+
+    // each process gets an ID that will be used for every communication, because they will output at any time/order
+    stringstream IDjob; IDjob << "Job" << rankProcess+1 << "/" << nJobs;
+    string myID = IDjob.str();
+
+    // => Checking inputs one by one
+
+    // 0 - Basics
+    if(nThreads < 0) {cerr << "ERR: option repertoire, wrong number of threads, will take 1" << nThreads << endl; nThreads = 1;}
+    if(nThreads > MAX_ALLOWED_THREADS) {cerr << "ERR: option tasks, Does not allow more than " << MAX_ALLOWED_THREADS << " threads (requested: " << nThreads << "), will take 50" << endl; nThreads = MAX_ALLOWED_THREADS;}
+    if(startIDsim > endIDsim){cerr << "ERR: option tasks, the ending IDsim " << endIDsim << " is before the starting IDsim " << startIDsim << " -> ending" << endl; return;}
+
+    // 1 - Reading the list of sequences to process:
+    cout << myID << "   ... loading task file " << fileName << "\n";
+    ifstream f(fileName);
+    if(!f){cerr << "ERR: processTasks, file " << fileName << " not found " << endl; return;}
+    char discardHeaders[10000];
+    f.getline(discardHeaders, 9999);
+
+    int IDsim = 0, mutations = 0;
+    string antigenID, origin, hotspot, location, sequence, toProcess;
+    int cpt = 0;
+
+    vector<oneTask*> pileOfTasks;
+    stringstream plannedTasks;
+    while((IDsim >= 0) && (cpt < 10000000)) {
+        IDsim = -1;
+        f >> IDsim >> antigenID >> origin >> mutations >> hotspot >> location >> sequence >> toProcess;
+        cpt++;
+
+        if((IDsim >= startIDsim) && (IDsim <= endIDsim)){
+            if((nJobs == 1) || (((IDsim + rankProcess) % nJobs) == 0)){
+                plannedTasks << myID << "\t" << IDsim << "\t" << antigenID << "\t" << toProcess << "\n";
+                pileOfTasks.push_back(new oneTask(IDsim, antigenID, origin, sequence, toProcess));
+            }
+        }
+    }
+    f.close();
+    cout << "Process " << myID << " will process the following tasks (on " << nThreads << " threads per task)" << endl;
+    cout << plannedTasks.str() << endl;
+
+    //<< "\n       expected to have 2 or 3 columns: ID , CDR3 sequence , [optional tag]" << endl;
+    size_t nT = pileOfTasks.size();
+    cout << myID << "   ... Found " << nT << " tasks to perform " << endl;
+    if(nT < 1) return;
+
+    for(size_t i = 0; i < nT; ++i){
+        oneTask* currentTask = pileOfTasks[i];
+        if(!currentTask) return;
+
+        // 2a - Loading the antigen from the library. Either call with a number, or with a substring of its name.
+        string origin = currentTask->origin;
+        cout << myID << "   ... loading origin antigen " << origin << " from the library " << endl;
+        std::pair<superProtein*, vector<int> > AG = getAntigen(origin);
+        if(!AG.first) continue;
+
+        string AntigenName = currentTask->antigenID;
+
+        cout << myID << "   ... loading mutant sequence for antigen " << AntigenName << endl;
+        AG.first->setAAs(currentTask->sequence);
+
+        cout << myID << "   ... charging the sequences to process with this antigen " << endl;
+        repertoire rep = repertoire(currentTask->toProcess);
+        if(rep.nLines() < 1) {
+            cerr << "ERR: No sequences to process, trying next task" << endl;
+            continue;
+        }
+
+        // 2b - Preparing or loading the structures for this antigen
+        // Note: we make each process check the file exists, in case problems of copying/file access between different machines
+        // first, check if the structures are available (or the prepared compact interaction codes for this AA sequence):
+        string fStruct = fnameStructures(AG.first, receptorSize, minInteract, AG.second);
+        ifstream f(fStruct.c_str());
+        if(f.good()){f.close();}
+        else {
+            string fCompact =   fileNameCompactForAASeqLigand(AG.first, receptorSize, minInteract, AG.second);
+            ifstream f(fStruct.c_str());
+            if(f.good()){f.close();}
+            else {
+                cout << "\nERR: the list of binding structures for this antigen could not been found in this folder..." << endl;
+                cout << "     its calculation can take typically 12 to 50 hours, so we do not recompute structures inside " << endl;
+                cout << "     the 'tasks' option, which is made to treat lots of sequences in multithreads, and the " << endl;
+                cout << "     calculation of structures is not multithreaded, so it would waste resources." << endl;
+                cout << "     => Please either find the structures file on the Absolut server, " << endl;
+                cout << "     or run this program with the option 'singleBinding' and one CDR3 AA sequence, it will compute " << endl;
+                cout << "     the structures and save them in the current folder." << endl;
+                cout << "\n";
+                cout << "     For information, the lacking file is:" << endl;
+                cout << "     " << fStruct << endl;
+                cout << "\n";
+                cout << "     Or, alternately, the file with precomputed interaction codes:" << endl;
+                cout << "     " << fStruct << endl;
+                cout << "Bye!" << endl;
+                // each process will close
+                continue;
+            }
+        }
+
+
+        cout << "   ... Sequence of antigen:" << AG.first->getAAseq() << endl;
+        affinityOneLigand T3 = affinityOneLigand(AG.first, receptorSize, minInteract, -1, 1, AG.second);
+        // This shortcuts a lots of documenting/debugging calculations, and only calculates best energy
+        T3.setUltraFast(true);
+
+        // Now once all compact interactions are loaded into memory, we kill the generated files...
+
+#ifdef RemoveCompactFilesOnTheWay
+        // Since each antigen generates a compact file, first we delete it
+        string fCompactToDelete = fileNameCompactForAASeqLigand(AG.first, receptorSize, minInteract, AG.second);
+
+        if(remove(fCompactToDelete.c_str()) != 0)  // from cstdio normally
+            cerr << "Error deleting file" << fCompactToDelete << endl;
+
+        string fCompactAndStructToDelete = fnameStructuresAndCompactForAASeqLigand(AG.first, receptorSize, minInteract, AG.second);
+        if(remove(fCompactAndStructToDelete.c_str()) != 0)  // from cstdio normally
+            cerr << "Error deleting file" << fCompactAndStructToDelete << endl;
+
+        cout << myID << "   -> Removed compact files!" << endl;
+#endif
+        // 3 - Separating the job:
+        //      - between the processes (1 ... nJobs) => startingLineThisJob ... endingLineThisJob (both included)
+        //      - then between the threads insied each process => Will be done later
+        int minLine = 0;
+        int maxLine = static_cast<int>(rep.nLines())-1;
+        int nToProcess = maxLine - minLine + 1;
+
+        stringstream folderSim; folderSim << prefix << "/" << currentTask->IDsim << "/";
+        string folderOutput = folderSim.str();
+        #ifdef _WIN32
+        mkdir(folderOutput.c_str());
+        #else
+        mkdir(folderOutput.c_str(), 0777);
+        #endif
+
+        set<string> listIDsToIgnore;
+        ifstream fignore((folderSim.str() + string("IDstoIgnore.txt")).c_str());
+        if(!fignore.fail()){
+            string readID = "-";
+            int cptf = 0;
+            while(fignore.good() && (readID.size() > 0) && (cptf < 1e9)){
+                cptf++;
+                fignore >> readID;
+                listIDsToIgnore.insert(readID);
+            }
+            cout << "Found a list of " << listIDsToIgnore.size() << " sequences IDs to ignore in file " << "IDstoIgnore.txt" << endl;
+        }
+
+
+        // from now on, identical code as before
+        int nPerJob = nToProcess / nJobs;   // number per MPI process
+
+        int startingLineThisJob = minLine; // + rankProcess * nPerJob; // + 10000;
+        int endingLineThisJob = maxLine; //minLine + (rankProcess + 1) * nPerJob - 1;
+        if((endingLineThisJob - startingLineThisJob) > 1e6){
+            cout << "WRN: Be prepared, very high number of sequences for this process. Might take forever...!\n" << endl;
+        }
+        cout << myID << "    ... will process lines " << startingLineThisJob << " to " << endingLineThisJob << " and then split into " << nThreads << " threads " << endl;
+
+
+        dataset<binding>* commonSavingLocation = new dataset<binding>();
+        commonSavingLocation->setNameAntigen(AntigenName);
+
+        pthread_t tid[MAX_ALLOWED_THREADS]; // we allow max 50 thread
+        for(size_t i = 0; i < static_cast<size_t>(nThreads); ++i){
+
+            // cut into equal blocks between each thread
+            int nToProcessThreads = endingLineThisJob - startingLineThisJob + 1;
+            int nPerThread = nToProcessThreads / nThreads;
+            int startingLineThisThread = startingLineThisJob + static_cast<int>(i) * nPerThread;
+            int endingLineThisThread = startingLineThisJob + (static_cast<int>(i) + 1) * nPerThread - 1;
+            if(static_cast<int>(i) == nThreads - 1) endingLineThisThread = endingLineThisJob;
+            //cout << myID << "t" << i << "    ... will process lines " << startingLineThisThread << " to " << endingLineThisThread << "" << endl;
+
+
+            stringstream resultFile;  resultFile << folderOutput << "TempBindingsFor" << AntigenName << "_t" << i << "_Part" << rankProcess+1 <<"_of_" << nJobs << ".txt";
+            vector< std::pair<string, string> >* listToProcess = new vector< std::pair<string, string> >(rep.getLines(startingLineThisThread, endingLineThisThread, listIDsToIgnore));
+
+
+            stringstream threadName; threadName << "Proc" << rankProcess << "_t" << i << "/" << nThreads;
+            cout << threadName.str() << ", will treat " << listToProcess->size() << ", i.e. lines " << startingLineThisThread << " to " << endingLineThisThread << " included,  and save result in " << endl;
+            cout << threadName.str() << ", " << resultFile.str() << endl;
+
+            //struct argsThread *arguments = (struct argsThread *) malloc(sizeof(struct argsThread)); // this did segfault, C way of doing, bad bad bad
+            argsThread *arguments = new argsThread();
+            arguments->resultFile = resultFile.str();
+            arguments->receptorSize = receptorSize;
+            arguments->T3 = &T3;
+            arguments->listToProcess = listToProcess;
+            arguments->identificationThread = threadName.str();
+            arguments->antigenName = AntigenName;
+            arguments->savingLocation = commonSavingLocation;
+
+            if(nThreads > 1){
+                int err = pthread_create(&(tid[i]), nullptr, &oneThreadJob, (void *) arguments);
+                if (err != 0) cerr << "\ncan't create thread :" << strerror(err) << endl;
+            } else {
+                // in this case we don't need to start a thread, just call the function
+                oneThreadJob((void*) arguments);
+            }
+        }
+
+        if(nThreads > 1){
+            cerr << myID << ", waiting for all threads to complete" << endl;
+            for(size_t i = 0; i < static_cast<size_t>(nThreads); ++i){
+                pthread_join(tid[i], nullptr);
+                cout << myID << ", thread " << i << "/" << nThreads << " has finished " << endl;
+            }
+        }
+
+
+        stringstream fName; fName << folderOutput << AntigenName << "FinalBindings_Process_" << rankProcess+1 << "_Of_" << nJobs << ".txt";
+        cout << myID << "Saving pooled results into " << fName.str() << endl;
+        commonSavingLocation->write(fName.str());
+
+
+
+        if(commonSavingLocation) delete commonSavingLocation;
+    }
+
+
+    // This mutex control the access to shared memory, can be cleared now
+    pthread_mutex_destroy(&lockAccessPrecompAffinities);
+    pthread_mutex_destroy(&lockSaveCommonDataset);
+
+    cout << myID << ", =============== process finished! ==============" << endl;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // ================================= Option 4: Single Binding (does all precalculations) ====================================
@@ -1297,6 +1690,7 @@ void option7(string ID_antigen, bool generateHotspots, string bindingDatasetFile
         set<int>* s = new set<int>(AG.second.begin(), AG.second.end());
         addToDisplay(s);
     } else {
+        cout << "Adding the antibody to the graphics as forbidden positions" << endl;
         addToDisplay(transformed);
     }
 
@@ -1496,4 +1890,110 @@ void info_fileNames(string ID_antigen){
     std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
     cout << "Pre-calculated structures are in " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;
     cout << "use:\nwget http://philippe-robert.com/Absolut/Structures/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second)<< endl;
+}
+
+void option11(string ID_antigen, string repertoireFileName, size_t nPoses, int latticeSize){
+    // for absolut this is 10 and 11
+    int receptorSize = DefaultReceptorSizeBonds;
+    int minInteract = DefaultContactPoints;
+
+
+    repertoire rep = repertoire(repertoireFileName);
+    cout << "   ... Found " << rep.nLines() << " lines/sequences " << endl;
+    if(rep.nLines() < 1) return;
+
+    // 2a - Loading the antigen from the library. Either call with a number, or with a substring of its name.
+    string AntigenName = (ID_antigen.size() < 4) ? IDshortcut(std::stoi(ID_antigen)) : IDshortcut(ID_antigen);
+    cout << "   ... loading antigen " << AntigenName << " from the library " << endl;
+    std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
+
+    // 2b - Preparing or loading the structures for this antigen
+    // Note: we make each process check the file exists, in case problems of copying/file access between different machines
+    // first, check if the structures are available (or the prepared compact interaction codes for this AA sequence):
+    string fStruct = fnameStructures(AG.first, receptorSize, minInteract, AG.second);
+    ifstream f(fStruct.c_str());
+    if(f.good()){f.close();}
+    else {
+        string fCompact =   fileNameCompactForAASeqLigand(AG.first, receptorSize, minInteract, AG.second);
+        ifstream f(fStruct.c_str());
+        if(f.good()){f.close();}
+        else {
+            cout << "\nERR: the list of binding structures for this antigen could not been found in this folder..." << endl;
+            cout << "     its calculation can take typically 12 to 50 hours, so we do not recompute structures inside " << endl;
+            cout << "     the 'repertoire' option, which is made to treat lots of sequences in multithreads, and the " << endl;
+            cout << "     calculation of structures is not multithreaded, so it would waste resources." << endl;
+            cout << "     => Please either find the structures file on the Absolut server, " << endl;
+            cout << "     or run this program with the option 'singleBinding' and one CDR3 AA sequence, it will compute " << endl;
+            cout << "     the structures and save them in the current folder." << endl;
+            cout << "\n";
+            cout << "     For information, the lacking file is:" << endl;
+            cout << "     " << fStruct << endl;
+            cout << "\n";
+            cout << "     Or, alternately, the file with precomputed interaction codes:" << endl;
+            cout << "     " << fStruct << endl;
+            cout << "Bye!" << endl;
+            return;
+        }
+    }
+
+    cout << "The main process will check everything is ready to calculate affinities, and regenerate compact files if necessary" << endl;
+    affinityOneLigand Ttest = affinityOneLigand(AG.first, receptorSize, minInteract, -1, 1, AG.second);
+    Ttest.affinity(string(receptorSize+1, 'A'));
+    cout << "   -> Everything ready!" << endl;
+
+    // in case the file name included a folder, we remove the folder, to create the outputFile
+    string repertoireFileNameWithoutPath = repertoireFileName;
+    if(repertoireFileNameWithoutPath.find('/') != std::string::npos){
+            repertoireFileNameWithoutPath = repertoireFileNameWithoutPath.substr(repertoireFileNameWithoutPath.find_last_of("\\/")+1);
+    }
+
+    stringstream fileOut; fileOut << "Poses_" << ID_antigen << "_" << repertoireFileNameWithoutPath << "_" << nPoses << "_" << latticeSize << ".txt";
+    cout << "The poses will be saved in " << fileOut.str() << endl;
+
+    ofstream fout(fileOut.str());
+    fout << "AGname\tID_CDR3\tCDR3\tslice\tposeStr\tposeCode\tbindEnergy\ttotEnergy\tcode\tfnatScore\tfracFnat\tcenteringNr\tantigenLattice\tantibodyLattice\n";
+
+    size_t nSeq = rep.nLines();
+    for(size_t k = 0; k < nSeq ; ++k){
+        pair<string, string> IDandCDR3 = rep.getLine(k);
+
+        vector<string> cutSlides = slides(IDandCDR3.second, receptorSize+1);
+        size_t nSl = cutSlides.size();
+
+        for(size_t si = 0; si < nSl; ++si){
+            string sequence = cutSlides[si];
+
+            //affinityOneLigand Ttest = affinityOneLigand(AG.first, DefaultReceptorSizeBonds, DefaultContactPoints, -1, 1, AG.second);
+            //cout << Ttest.affinity(string(DefaultReceptorSizeBonds+1, 'A')).first << endl;
+            Ttest.setUltraFast(false);
+            vector<pose>* poses = new vector<pose>();
+            Ttest.affinity(sequence, true, nullptr, nPoses, poses);
+
+            string bestInterCode = "";
+            if(k == 0) cout << "Example output, for the first sequence" << endl;
+            for(size_t i = 0; i < poses->size(); ++i){
+                vector< std::pair<string, string> > lattices = latticesComplexes(AG.first, (*poses)[i].startPos, (*poses)[i].structure, sequence, latticeSize);
+
+                // the other interaction code, with numbers
+                struct3D s = struct3D((*poses)[i].structure, UnDefined, (*poses)[i].startPos);
+                superProtein s2(s);
+                //enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompoABParatope, seqAGEpitope, seqABParatope, motifAGEpitope, motifABParatope, motifsSizeGapsLigand, motifsSizeGapsRec, motifsChemicalLig, motifsChemicalRec, agregatesAGEpitope, agregatesABParatope, chemicalAGEpitope, chemicalABParatope, segmentedABParatope, segmentedAGEpitope, interMaskABParatope, interMaskAGEpitope, positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
+                int degree = 1;
+                vector<string> analyzedFeatures = structuralFeatures(*(AG.first), s2, degree);
+                string code = analyzedFeatures[interCodeWithIDpos];
+                if(i == 0) {bestInterCode = code;}
+                int maxFnat = bestInterCode.size() / 5;
+                int fnatScore = fnat(code, bestInterCode);
+                double fracFnat = static_cast<double>(fnatScore) / (static_cast<double>(maxFnat) + 1e-12);
+
+                for(size_t j = 0; j < lattices.size(); ++j){
+                    fout << AntigenName << "\t" << IDandCDR3.first << "\t" << IDandCDR3.second << "\t" << sequence << "\t" << (*poses)[i].print() << "\t" << code << "\t" <<  fnatScore << "\t" << fracFnat << "\t" << j+1 << "\t" << lattices[j].first << "\t" << lattices[j].second << "\n";
+                    if(k == 0){
+                        cout << AntigenName << "\t" << IDandCDR3.first << "\t" << IDandCDR3.second << "\t" << sequence << "\t" << (*poses)[i].print() << "\t" << code << "\t" <<  fnatScore << "\t" << fracFnat << "\t" << j+1 << "\t" << lattices[j].first << "\t" << lattices[j].second << "\n";
+                    }
+                }
+            }
+        }
+    }
+    fout.close();
 }

@@ -84,7 +84,7 @@ set<int> getSurface(superProtein* S){
     for(size_t i = 0; i < N; ++i){
         int pos = S->points[i].IDposition;
         set<int> neigh = vectorToSet(lattice::idNeighbors(pos));
-        if(intersection_sets(neigh, atmos).size() > 0){
+        if(intersection_sets<int>(neigh, atmos).size() > 0){
              res.insert(pos);
         }
     }
@@ -99,7 +99,7 @@ string getSurfaceAAs(superProtein* S){
     for(size_t i = 0; i < N; ++i){
         int pos = S->points[i].IDposition;
         set<int> neigh = vectorToSet(lattice::idNeighbors(pos));
-        if(intersection_sets(neigh, atmos).size() > 0){
+        if(intersection_sets<int>(neigh, atmos).size() > 0){
              res.push_back(AAname(S->points[i].TypeResidue));
         } else {
             res.push_back('-');
@@ -123,7 +123,7 @@ string getSurfaceAAs(superProtein* S){
 //        int neigh = toTreat[i];
 //        if(alreadyTaken.find(neigh) == alreadyTaken.end()){
 //            set<int> aroundSet = vectorToSet(lattice::idNeighbors(neigh));
-//            if(intersection_sets(aroundSet, totOccupPos).size() > 0){
+//            if(intersection_sets<int>(aroundSet, totOccupPos).size() > 0){
 //                alreadyTaken.insert(neigh);
 //                res.insert(neigh);
 //                set<int> retrieved = getAtmosphere(neigh, totOccupPos, alreadyTaken);
@@ -146,7 +146,7 @@ set<int> getAtmosphere(int onePos, set<int>& totOccupPos, set<int>& alreadyTaken
         int neigh = toTreat[i];
         if(alreadyTaken.find(neigh) == alreadyTaken.end()){
             set<int> aroundSet = vectorToSet(lattice::idLargeNeighbors(neigh));
-            if(intersection_sets(aroundSet, totOccupPos).size() > 0){
+            if(intersection_sets<int>(aroundSet, totOccupPos).size() > 0){
                 alreadyTaken.insert(neigh);
                 res.insert(neigh);
                 set<int> retrieved = getAtmosphere(neigh, totOccupPos, alreadyTaken);
@@ -176,7 +176,7 @@ set<int> recAddSurfaceNeighbors(int thisPos, set<int>& totOccupPos, set<int> &re
     // which neighbor points are remaining to treat (inside the protein)
     vector<int> neighborPoints = lattice::idLargeNeighbors(thisPos);
     set<int> neighborsAsSet = set<int>(neighborPoints.begin(), neighborPoints.end());
-    set<int> nonTreatedNeighbors = intersection_sets(neighborsAsSet, remainingResiduesToTreat);
+    set<int> nonTreatedNeighbors = intersection_sets<int>(neighborsAsSet, remainingResiduesToTreat);
 
     // Set of outside positions seen by this point
 
@@ -223,7 +223,7 @@ set<int> surfaceIDResidues(superProtein * S, vector<int>& forbiddenPoints){
     set<int> OP = getOccupiedPositions(S);
     set<int> forb = set<int>(forbiddenPoints.begin(), forbiddenPoints.end());
     set<int> totalBlocked = union_sets(OP, forb);
-    if(intersection_sets(OP, forb).size() > 0) cerr << "ERR: an occupied position is also forbidden" << endl;
+    if(intersection_sets<int>(OP, forb).size() > 0) cerr << "ERR: an occupied position is also forbidden" << endl;
 
     std::pair<int,int> twoPos = oneAirAndOneSurfacePositions(OP);
     int anAtmosphericPoint = twoPos.first;
@@ -244,7 +244,7 @@ set<int> surfaceIDResidues(superProtein * S, vector<int>& forbiddenPoints){
     for(set<int>::iterator it = OP.begin(); it != OP.end(); ++it){
         vector<int> directNeighbors = lattice::idNeighbors(*it);
         set<int> neighbSet = set<int>(directNeighbors.begin(), directNeighbors.end());
-        if(intersection_sets(neighbSet, atmosphere).size() > 0) atmosphericPoints.insert(*it);
+        if(intersection_sets<int>(neighbSet, atmosphere).size() > 0) atmosphericPoints.insert(*it);
     }
 
     // Now, surface search (not naive algorithm) - careful, OP will be modified => I think this algo doesn't work for half hidden positions!

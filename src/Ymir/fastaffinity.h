@@ -15,6 +15,18 @@ using namespace std;
 #include "pthread.h"
 extern pthread_mutex_t lockAccessPrecompAffinities;
 
+// All info of a ligand pose, if one wants to output the top binding poses
+struct pose {
+    pose(int _startPos, double _affInteract, double _totalAff, string _structure, string _interactionCode) :
+        startPos(_startPos), affInteract(_affInteract), totalAff(_totalAff), structure(_structure), interactionCode(_interactionCode) {}
+    int startPos;
+    double affInteract;
+    double totalAff;
+    string structure;
+    string interactionCode;
+    string print();
+};
+
 class affinityOneLigand
 {
 public:
@@ -48,7 +60,7 @@ public:
 
     // 3 - to be called for getting an affinity
     // returns both best and statistical energies.
-    std::pair<double, double> affinity(string receptorAASeq, bool showStructures = false, vector<string> *returnBestStructures = nullptr);
+    std::pair<double, double> affinity(string receptorAASeq, bool showStructures = false, vector<string> *returnBestStructures = nullptr, size_t nPoses = 0, vector<pose> *returnTopPoses = nullptr);
 
     // just simpler way, just returns the bestEnergy
     double bestAffinity(string receptorAASeq, bool showStructures = false, vector<string> *returnBestStructures = nullptr){

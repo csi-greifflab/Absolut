@@ -1,0 +1,145 @@
+Steps to reproduce the DLAB-VS pipeline.
+
+A/ Create a list of antibody-antigen pairs based on their affinities / pairing with other antigens
+
+it needs the raw bindings from the Absolut Database. 
+See 1-SelectAbAgPairsForDLAB.Rmd and 2-FormatAbAgPairsForAbsolut.Rmd
+
+Output: A list of files with name like PSlices1ADQ_A.txt for each antigens.
+The list of generated files is provided in 3-ListAbAgPairsBeforePoseGeneration.zip
+
+
+B/ Create the poses for each antibody-antigen pair
+
+For each antigen like 1ADQ_A, run
+(500 is the number of poses, 6 is the size of the output lattice (6x6x6))
+./AbsolutNoLib poses 1ADQ_A PSlices1ADQ_A.txt 500 6
+
+Output: a file like "Poses_1ADQ_A_PSlices1ADQ_A.txt_500_6.txt" which is extremely big (expect 3GB or so after zipping)
+
+
+C/ Preprocess from the big pose files a subselection of enough poses of each type for ML
+
+see 4-PreprocessAbsolutPoseOutput20January.py
+for each antigen and a selection of fnatBind and fnatDLABNegative
+python 4-PreprocessAbsolutPoseOutput20January.py antigenID nPerType fnatBind= 0.9 fnatDLABNegative=0.1 groupSize=50
+
+Example of commands we used for each antigen:
+
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	1	0.1	1
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	1	0.1	10
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	1	0.1	50
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.9	0.1	1
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.9	0.1	10
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.9	0.1	50
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.7	0.1	1
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.7	0.1	10
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.7	0.1	50
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.5	0.1	1
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.5	0.1	10
+python 4-PreprocessAbsolutPoseOutput20January.py 	1ADQ_A	10000	0.5	0.1	50
+
+Output: n files like "PrePro1ADQ_A_10000_0.9_0.1_50v1.txt" , from v1.txt to vn.txt for each condition of fnat thresholds and group sizes
+
+
+D/ Run DLAB (DLAB knows which preprocessed file to look for using the generated names like PrePro1ADQ_A_10000_0.9_0.1_50v1.txt)
+you need to pre-generate the files you will need in advance.
+
+See inside 5-DLAB11_Fair.py how to call it 
+
+
+Example of commands:
+
+python DLAB11_Fair.py 10 10000 1111 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1111_all.txt &
+python DLAB11_Fair.py 10 10000 1110 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1110_all.txt &
+python DLAB11_Fair.py 10 10000 0111 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0111_all.txt &
+python DLAB11_Fair.py 10 10000 1101 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1101_all.txt &
+python DLAB11_Fair.py 10 10000 1011 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1011_all.txt &
+python DLAB11_Fair.py 10 10000 1001 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1001_all.txt &
+python DLAB11_Fair.py 10 10000 1000 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1000_all.txt &
+python DLAB11_Fair.py 10 10000 0001 1111 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0001_all.txt &
+
+python DLAB11_Fair.py 10 10000 1111 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1111_DL.txt &
+python DLAB11_Fair.py 10 10000 1110 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1110_DL.txt &
+python DLAB11_Fair.py 10 10000 0111 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0111_DL.txt &
+python DLAB11_Fair.py 10 10000 1101 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1101_DL.txt &
+python DLAB11_Fair.py 10 10000 1011 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1011_DL.txt &
+python DLAB11_Fair.py 10 10000 1001 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1001_DL.txt &
+python DLAB11_Fair.py 10 10000 1000 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1000_DL.txt &
+python DLAB11_Fair.py 10 10000 0001 1001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0001_DL.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 1 0.1 2 10 10 2000   &> FA11a.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 0.9 0.1 2 10 10 2000 &> FA11b.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 0.7 0.1 2 10 10 2000 &> FA12.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 0.7 0.1 2 10 10 2000 &> FA14.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 0.5 0.1 2 10 10 2000 &> FA15.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 1 0.1 2 10 10 2000   &> FA11aW.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 0.9 0.1 2 10 10 2000 &> FA11bW.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 0.7 0.1 2 10 10 2000 &> FA12W.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 0.7 0.1 2 10 10 2000 &> FA14W.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 0.5 0.1 2 10 10 2000 &> FA15W.txt &
+
+python DLAB11_Fair.py 10 10000 1111 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1111_min.txt &
+python DLAB11_Fair.py 10 10000 1110 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1110_min.txt &
+python DLAB11_Fair.py 10 10000 0111 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0111_min.txt &
+python DLAB11_Fair.py 10 10000 1101 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1101_min.txt &
+python DLAB11_Fair.py 10 10000 1011 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1011_min.txt &
+python DLAB11_Fair.py 10 10000 1001 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1001_min.txt &
+python DLAB11_Fair.py 10 10000 1000 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_1000_min.txt &
+python DLAB11_Fair.py 10 10000 0001 0001 1 20 10 0.9 0.1 2 10 10 2000 &> FDLN10k_0001_min.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 1 0.1 2 10 10 2000   &> Mar1Fa1.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 0.9 0.1 2 10 10 2000 &> Mar1Fa1b.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 0.7 0.1 2 10 10 2000 &> Mar1Fa2.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 0001 1 20 50 0.5 0.1 2 10 10 2000 &> Mar1Fa2b.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 1.0 0.1 2 10 10 2000 &> Mar1Fa3a.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 0.9 0.1 2 10 10 2000 &> Mar1Fa3b.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 0.7 0.1 2 10 10 2000 &> Mar1Fa4.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 0001 1 20 50 0.5 0.1 2 10 10 2000 &> Mar1Fa5.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 1 0.1 2 10 10 2000   &> Mar1001Fa1.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 0.9 0.1 2 10 10 2000 &> Mar1001Fa1b.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 0.7 0.1 2 10 10 2000 &> Mar1001Fa2.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 0001 1001 1 20 50 0.5 0.1 2 10 10 2000 &> Mar1001Fa2b.txt &
+
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 1.0 0.1 2 10 10 2000 &> Mar1001Fa3a.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 0.9 0.1 2 10 10 2000 &> Mar1001Fa3b.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 0.7 0.1 2 10 10 2000 &> Mar1001Fa4.txt &
+taskset --cpu-list 150-250 nice -n 19 python  DLAB11_Fair.py 10 10000 1001 1001 1 20 50 0.5 0.1 2 10 10 2000 &> Mar1001Fa5.txt &
+
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1111 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1111_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1110 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1110_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0111 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0111_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1101 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1101_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1011 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1011_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1001 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1001_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1000 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1000_all2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0001 1111 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0001_all2.txt &
+
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1111 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1111_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1110 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1110_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0111 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0111_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1101 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1101_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1011 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1011_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1001 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1001_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1000 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1000_DL2.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0001 1001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0001_DL2.txt &
+
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1111 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1111_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1110 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1110_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0111 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0111_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1101 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1101_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1011 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1011_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1001 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1001_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 1000 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_1000_min.txt &
+taskset --cpu-list 130-250 nice -n 19 python DLAB11_Fair.py 10 10000 0001 0001 1 20 10 0.7 0.1 2 10 10 2000 &> F7DLN10k_0001_min.txt &
+
+
+
+
+
+
+
+

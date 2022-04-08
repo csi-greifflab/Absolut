@@ -16,7 +16,8 @@ std::mt19937* random::generator = nullptr;
 bool random::initialized = false;
 
 void random::initialize(unsigned int init_seed){
-    if(initialized) std::cerr << "WRN: random::initialize() is being called two times or more" << endl;
+    if(initialized && (init_seed != 0)) std::cerr << "WRN: random::initialize() is being called two times or more with different seeds" << endl;
+    if(initialized && (init_seed == 0)) return;
     initialized = true;
     std::mt19937::result_type seed = time(0);
     if(init_seed != 0){seed = init_seed;}
@@ -29,6 +30,13 @@ int random::uniformInteger(int a, int b){
     std::uniform_int_distribution<int> distribution = std::uniform_int_distribution<int>(a, b);
     return distribution(*generator);
 }
+
+size_t random::uniformUInteger(size_t a, size_t b){
+    if(!initialized) initialize();
+    std::uniform_int_distribution<size_t> distribution = std::uniform_int_distribution<size_t>(a, b);
+    return distribution(*generator);
+}
+
 
 double random::uniformDouble(double a, double b){
     if(!initialized) initialize();

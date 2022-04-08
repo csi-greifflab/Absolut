@@ -3,6 +3,7 @@ include("../latFit/latFit.pri")
 
 HEADERS += \
     antigenLib.h \
+    dlab.h \
     epitope.h \
     fileformats.h \
     generatemutants.h \
@@ -10,6 +11,7 @@ HEADERS += \
     importrepertoire.h \
     motifFeatures.h \
     poolstructs.h \
+    runListTasks.h \
     selfEvo.h \
     discretize.h \
     pdb.h \
@@ -19,6 +21,7 @@ HEADERS += \
 
 SOURCES += \
     antigenLib.cpp \
+    dlab.cpp \
     epitope.cpp \
     fileformats.cpp \
     generatemutants.cpp \
@@ -27,6 +30,7 @@ SOURCES += \
     motifFeatures.cpp \
     oldScripts.cpp \
     poolstructs.cpp \
+    runListTasks.cpp \
     selfEvo.cpp \
     discretize.cpp \
     pdb.cpp \

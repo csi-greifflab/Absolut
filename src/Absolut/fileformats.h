@@ -55,9 +55,13 @@ string getFormat(string fileName);
 ///      CDR_3073    CARRDDYDGFDYW
 ///      CDR_3078    CARRGGSSHWYFDVW
 ///  ...
+
+// Note: for sorting repertoires, a max size for the IDs in number of characters is decided. See compFirst function for details
+#define maxSizeIDs 250
+
 struct repertoire{
     repertoire(){}
-    repertoire(string fileName);
+    repertoire(string fileName, bool skipHeader = false);
     string originalFileName;
     vector<string> listIDs;
     vector<string> sequences;
@@ -65,7 +69,7 @@ struct repertoire{
 
     // tool functions
     virtual size_t nLines();
-    vector< pair<string, string > > getLines(int beginLine, int endingLine);
+    vector< pair<string, string > > getLines(int beginLine, int endingLine, set<string> IDstoIgnore = set<string>());
     pair<string, string > getLine(int line);
     vector< pair<string, string > > getRandomLines(int nWantedLines);
     pair<string, string > getRandomLine();
@@ -80,6 +84,7 @@ protected:
     // Maps where are each sequence and ID seen so far (to make search much faster)
     map<string, size_t > listPositionsIDs;
     map<string, vector<size_t> > listPositionsSequences;
+public:
     bool addSequence(string ID, string sequence);
 
 public:

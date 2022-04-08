@@ -74,7 +74,8 @@ SOURCES       = Ymir/compact.cpp \
 		Absolut/quality.cpp \
 		Absolut/poolstructs.cpp \
 		Absolut/delimain.cpp \
-		Absolut/topology.cpp
+		Absolut/topology.cpp \
+		Absolut/dlab.cpp
 OBJECTS       = compact.o \
 		lattice.o \
 		proteins.o \
@@ -97,7 +98,8 @@ OBJECTS       = compact.o \
 		quality.o \
 		poolstructs.o \
 		delimain.o \
-		topology.o
+		topology.o \
+		dlab.o
 DIST          = Absolut/.qmake.stash \
 		Absolut/Ymir/YmirNoGL.pri \
 		Ymir/compact.h \
@@ -121,7 +123,10 @@ DIST          = Absolut/.qmake.stash \
 		Absolut/motifFeatures.h \
 		Absolut/selfEvo.h \
 		Absolut/poolstructs.h \
-		Absolut/quality.h Ymir/compact.cpp \
+		Absolut/quality.h \
+		Absolut/topology.h \
+		Absolut/dlab.h \
+		Ymir/compact.cpp \
 		Ymir/lattice.cpp \
 		Ymir/proteins.cpp \
 		Ymir/receptorligand.cpp \
@@ -142,6 +147,8 @@ DIST          = Absolut/.qmake.stash \
 		Absolut/selfEvo.cpp \
 		Absolut/quality.cpp \
 		Absolut/poolstructs.cpp \
+		Absolut/topology.cpp \
+		Absolut/dlab.cpp \
 		Absolut/delimain.cpp
 QMAKE_TARGET  = AbsolutNoLib
 DESTDIR       = 
@@ -475,6 +482,29 @@ delimain.o: Absolut/delimain.cpp Ymir/ymir.h \
 		Absolut/pdb.h \
 		Ymir/plot3d.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o delimain.o Absolut/delimain.cpp
+
+dlab.o: Absolut/dlab.cpp Absolut/dlab.h \
+		Ymir/ymir.h \
+		Ymir/lattice.h \
+		Ymir/compact.h \
+		Ymir/proteins.h \
+		Ymir/receptorligand.h \
+		Ymir/fastaffinity.h \
+		Tools/md5.h \
+		Absolut/motifFeatures.h \
+		Absolut/importrepertoire.h \
+		Absolut/quality.h \
+		Absolut/selfEvo.h \
+		Tools/zaprandom.h \
+		Tools/dirent.h \
+		Absolut/antigenLib.h \
+		Tools/distribution.h \
+		Absolut/poolstructs.h \
+		Absolut/epitope.h \
+		Absolut/fileformats.h \
+		Absolut/html.h \
+		Absolut/topology.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dlab.o Absolut/dlab.cpp
 
 topology.o: Absolut/topology.cpp Absolut/topology.h \
 		Ymir/ymir.h \

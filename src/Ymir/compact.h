@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <set>
+#include <algorithm>
 using namespace std;
 
 /// \file
@@ -174,7 +175,26 @@ void testRotate();
 // tool functions
 bool contains(set<int> s, int v);
 set<int> union_sets(set<int>& s1, set<int>& s2);
-set<int> intersection_sets(set<int> &s1, set<int> &s2);
+//set<int> intersection_sets(set<int> &s1, set<int> &s2);
+
+template <typename T>
+set<T> intersection_sets(set<T> &s1, set<T> &s2){
+    vector<T> v1 = vector<T>(s1.begin(), s1.end());
+    vector<T> v2 = vector<T>(s2.begin(), s2.end());
+
+    // Precondition: make sure they're sorted
+    std::sort(v1.begin(), v1.end());
+    std::sort(v2.begin(), v2.end());
+
+    std::vector<T> v_intersection;
+
+    std::set_intersection(v1.begin(), v1.end(),
+                          v2.begin(), v2.end(),
+                          std::back_inserter(v_intersection));
+
+    set<T> res = set<T>(v_intersection.begin(), v_intersection.end());
+    return res;
+}
 
                             /// \brief Return the intersection of points occupied by two structures. \ingroup StructManip
 vector<int> intersection(struct3D& s1, struct3D& s2);
@@ -281,6 +301,7 @@ void testEncoding();
 
 // basic tool functions
 string print(set<int> &s);
+string print(set<string> &s);
 string print(struct3D & s);
 string printVector(vector<int> v);
 string printVector(vector<double> v);

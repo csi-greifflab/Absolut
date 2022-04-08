@@ -11,6 +11,7 @@ HEADERS += \
     selfEvo.h \
 	poolStructs.h \
     quality.h \
+	dlab.h \
     topology.h
 
 SOURCES += \
@@ -24,6 +25,7 @@ SOURCES += \
     quality.cpp \
 	poolStructs.cpp \
     delimain.cpp \
+	dlab.cpp \
     topology.cpp
 
 
@@ -40,3 +42,4 @@ QMAKE_CXXFLAGS += -std=c++11 -Wno-extra
 # -Wno-oldstyle-case -Wno-unused-parameter -Wno-shorten-64-to-32 -Wno-sign-conversion -Wno-ignored-qualifiers -Wno-type-limits -Wno-misleading-indentation -Wno-sign-compare -Wno-implicit-float-conversion
 # QMAKE_CXXFLAGS += -Wall -Wextra -Wunsafe-loop-optimizations -pedantic -Wfloat-equal -Wundef -Wpointer-arith -Wcast-align -Wunreachable-code
 
+CONFIG -= QT

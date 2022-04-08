@@ -1,0 +1,104 @@
+```{r}
+library(dplyr)
+library(stringr)
+
+# This script takes DatabaseDLAB.txt and creates files "PSlices1ADQ_A.txt" for each antigen
+# The output files are input for Absolut poses, and give the list of sequences for which poses should be generated
+
+# For each antigen, the slices are annotated with "P (positive) / L (Low affinity 1%-5% lowest energies) / N (nonbinder, 5%-100% worst energies) / O (other pair)
+#   The P slices will become "P", "I" or discarded later depending on their fnat score  
+```
+
+```{r}
+DLABsequences <-  read.table("DatabaseDLAB.txt", header=TRUE)
+head(DLABsequences)
+```
+
+
+```{r}
+additionalSequences <- read.table("newNonBinders.txt", header=TRUE)
+head(additionalSequences)
+```
+
+```{r}
+allSequences <- rbind(DLABsequences %>% select(AGname, Slide, Energy, Structure, type, label),additionalSequences)
+head(allSequences)
+```
+
+
+
+```{r}
+DLABsequences <- NULL
+additionalSequences <- NULL
+```
+
+
+
+```{r}
+allSequences %>% group_by(type, label) %>% mutate(n = n()) %>% slice(1)
+```
+
+#In dlab, they take 10% binder, 90% nonbinders, so let's keep it to only 10x more "binderOfOtherAG"
+# this would be 639 000 "Binders of other AG".
+```{r}
+# we would have done this, but it changes the number of sequences per antigen, not very clean
+# subsetNegativesDLAB <- allSequences %>% filter(type == "NonBinder", label == "BinderOfOtherAG") %>% sample_n(9*71000)
+# instead, we want 500*9 sequences for antigen
+subsetNegativesDLAB <- allSequences %>% filter(type == "NonBinder", label == "BinderOfOtherAG") %>% group_by(AGname) %>% sample_n(9*500)
+```
+
+```{r}
+nrow(subsetNegativesDLAB)
+```
+
+```{r}
+toProcess <- rbind(allSequences %>% filter(label != "BinderOfOtherAG"), subsetNegativesDLAB)
+```
+
+```{r}
+toProcess %>% group_by(type, label) %>% mutate(n = n()) %>% slice(1)
+```
+
+```{r}
+#Now preparing for Absolut format.
+# First, two columns: ID and sequence. Then, use the ID to get the type and label
+test <- toProcess
+test <- test %>% mutate(type = str_replace(type, "NonBinder", "-"))
+test <- test %>% mutate(type = str_replace(type, "Binder", "+"))
+test <- test %>% mutate(label = str_replace(label, "Positive", "P"))
+test <- test %>% mutate(label = str_replace(label, "BinderOfOtherAG", "O"))  #Other AG, we don't know for this AG - hopefully not a binder
+test <- test %>% mutate(label = str_replace(label, "LooserSameAG", "L"))  #Looser / low-affinity
+test <- test %>% mutate(label = str_replace(label, "LowAffSameAG", "N"))  #non-binder
+test <- test %>% mutate(id = rownames(test))
+```
+
+
+```{r}
+test <- test %>% mutate(prefix = paste0(label, id))
+```
+```{r}
+nrow(test)
+```
+
+
+```{r}
+head(test)
+```
+
+```{r}
+test %>% group_by(type, label) %>% mutate(n = n()) %>% slice(1)
+```
+```{r}
+listAGs <- unique(test$AGname)
+```
+
+
+```{r}
+for(AG in listAGs){
+    fname <- paste0("PSlices", AG, ".txt")
+    selected <- test %>% filter(AGname == AG) %>% select(prefix, Slide)
+    print(paste("Saved", nrow(selected), "sequences for antigen", AG, "in file", fname))
+    write.table(selected, fname, row.names=FALSE, col.names=FALSE, sep="\t", quote=FALSE)
+}
+```
+

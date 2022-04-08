@@ -24,7 +24,7 @@ using namespace std;
 
 // Default initial y axis. Defined as if the observer was following x with the y axis.
 moveDirection initialYaxis(moveDirection dir){
-    switch((moveDirection) dir){
+    switch(dir){
         case Right: return Straight;
         case Left: return Backwards;
         case Up: return Left;
@@ -40,10 +40,10 @@ moveDirection initialYaxis(moveDirection dir){
 
 
 moveDirection randRelMove(){
-    return (moveDirection) random::uniformInteger(0,(int) Nb_Moves_Relative-1);
+    return static_cast<moveDirection>(random::uniformInteger(0,(int) Nb_Moves_Relative-1));
 }
 moveDirection randAbsMove(){
-    return (moveDirection) random::uniformInteger(0,(int) Nb_Moves_Absolute-1);
+    return static_cast<moveDirection>(random::uniformInteger(0,(int) Nb_Moves_Absolute-1));
 }
 
 
@@ -75,13 +75,13 @@ char intToMoveChar(moveDirection m){
 
 int charMoveToInt(char c){
     switch(c){
-    case 'R': {return (int) Right;}
-    case 'L': {return (int) Left;}
-    case 'U': {return (int) Up;}
-    case 'D': {return (int) Down;}
-    case 'S': {return (int) Straight;}
-    case '-': {return (int) UnDefined;}  // Actually, calling charMoveToInt('-') doesn't make much sense.
-    case 'B': {return (int) Backwards;}  // only for the first move of an absolute structure
+    case 'R': {return Right;}
+    case 'L': {return Left;}
+    case 'U': {return Up;}
+    case 'D': {return Down;}
+    case 'S': {return Straight;}
+    case '-': {return UnDefined;}  // Actually, calling charMoveToInt('-') doesn't make much sense.
+    case 'B': {return Backwards;}  // only for the first move of an absolute structure
     default:  {
         cerr << "ERR: Proteins Structures are supposed to only contain -,R,L,U,D and S, and not " << c << endl;
         return UnDefined;
@@ -92,7 +92,7 @@ int charMoveToInt(char c){
 
 vector<int> moveVector(moveDirection dir){
     vector<int> res(3,0);
-    switch((moveDirection) dir){
+    switch(dir){
         case Right:     {res[1] = -1; break;}
         case Left:      {res[1] = +1; break;}
         case Up:        {res[2] = +1; break;}
@@ -135,10 +135,10 @@ moveDirection vectorialProduct(moveDirection x, moveDirection y){
         //cerr << "Loading vectorial product combinations" << endl;
         for(int i = 0; i < Nb_Moves_Absolute + 1; ++i){
             for(int j = 0; j < Nb_Moves_Absolute + 1; ++j){
-                int comb = (int) i + 100 * (int) j;
+                int comb = i + 100 * j;
                 if((i == UnDefined) || (j == UnDefined)) products[comb] = UnDefined;
                 else {
-                    vector<int> z = vectorialProduct(moveVector((moveDirection) i), moveVector((moveDirection) j));
+                    vector<int> z = vectorialProduct(moveVector(static_cast<moveDirection> (i)), moveVector(static_cast<moveDirection>(j)));
                     if(norm2(z) == 0) products[comb] = UnDefined;
                     else {
                         moveDirection mz = moveID(z);
@@ -150,14 +150,14 @@ moveDirection vectorialProduct(moveDirection x, moveDirection y){
         }
         loaded = true;
     }
-    return products[(int) x + 100 * (int) y];
+    return products[static_cast<int>(x) + 100 * static_cast<int>(y)];
 }
 
 void testVectorsDirections(){
     // do everything in CERR such that errors occur at the good place
     cerr << "============= testing moveVector() adn moveID(). Expected errors (normal)!" << endl;
     for(int i = 0; i < Nb_Moves_Absolute+1; ++i){ // goes one step too much (+1) to reach 'Undefined' or raise an error
-        cerr << "Direction : " << i << " (" << intToMoveChar(i) << ") " << printVector(moveVector((moveDirection) i)) << " IDmove" << moveID(moveVector((moveDirection) i)) << endl;
+        cerr << "Direction : " << i << " (" << intToMoveChar(i) << ") " << printVector(moveVector(static_cast<moveDirection>(i))) << " IDmove" << moveID(moveVector(static_cast<moveDirection>(i))) << endl;
     }
 
     cerr << "============= testing vectorial product " << endl;
@@ -171,7 +171,7 @@ void testVectorsDirections(){
 
     cerr << "============= testing initialYaxis" << endl;
     for(int i = 0; i < Nb_Moves_Absolute+1; ++i){ // goes one step too much (+1) to reach 'Undefined' or raise an error
-        cerr << "Direction : " << i << " (" << intToMoveChar(i) << ") " << initialYaxis((moveDirection) i) << " (" << intToMoveChar(initialYaxis((moveDirection) i)) <<endl;
+        cerr << "Direction : " << i << " (" << intToMoveChar(i) << ") " << initialYaxis(static_cast<moveDirection>(i)) << " (" << intToMoveChar(initialYaxis(static_cast<moveDirection>(i))) <<endl;
     }
 }
 
@@ -186,7 +186,9 @@ void testVectorsDirections(){
 
 // 1/ an ID is given to each combination (current observer direction (Ox), current observer y axis (Oy), and next relative move)
 int combinedID(moveDirection previous, moveDirection yaxis, moveDirection nextToTranslate){
-    return (int) previous * (Nb_Moves_Absolute + 1) * (Nb_Moves_Absolute + 1) + (int) yaxis * (Nb_Moves_Absolute + 1) + (int) nextToTranslate; // note: the +1's are in case someone puts UnDefined.
+    return static_cast<int>(previous) * (Nb_Moves_Absolute + 1) * (Nb_Moves_Absolute + 1) +
+            static_cast<int>(yaxis) * (Nb_Moves_Absolute + 1) +
+            static_cast<int>(nextToTranslate);  // note: the +1's are in case someone puts UnDefined.
 }
 
 vector<int> decombine(int ID){
@@ -532,6 +534,15 @@ string print(set<int> &s){
     return res.str();
 }
 
+string print(set<string> &s){
+    stringstream res;
+    std::set<string>::iterator it;
+    for(it = s.begin(); it != s.end(); ++it){
+        res << *it << " ";
+    }
+    return res.str();
+}
+
 
 string print(struct3D& s){
     stringstream res;
@@ -565,7 +576,7 @@ set<int> union_sets(set<int>& s1, set<int>& s2){
     return union_points;
 }
 
-set<int> intersection_sets(set<int> &s1, set<int> &s2){
+/*set<int> intersection_sets(set<int> &s1, set<int> &s2){
     // so there is no intersection sets function in C++, it takes VECTORS that need to be SORTED (hopefully, sets are)
     // see there: https://cukic.co/2018/06/03/set-intersection-in-cxx/
 
@@ -584,7 +595,27 @@ set<int> intersection_sets(set<int> &s1, set<int> &s2){
 
     set<int> res = set<int>(v_intersection.begin(), v_intersection.end());
     return res;
-}
+}*/
+
+//template <typename T>
+//set<T> intersection_sets(set<T> &s1, set<T> &s2){
+//    vector<T> v1 = vector<T>(s1.begin(), s1.end());
+//    vector<T> v2 = vector<T>(s2.begin(), s2.end());
+
+//    // Precondition: make sure they're sorted
+//    std::sort(v1.begin(), v1.end());
+//    std::sort(v2.begin(), v2.end());
+
+//    std::vector<T> v_intersection;
+
+//    std::set_intersection(v1.begin(), v1.end(),
+//                          v2.begin(), v2.end(),
+//                          std::back_inserter(v_intersection));
+
+//    set<T> res = set<T>(v_intersection.begin(), v_intersection.end());
+//    return res;
+//}
+
 
 
 

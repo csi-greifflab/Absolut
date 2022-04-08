@@ -688,13 +688,14 @@ string fixedDigitsInteger(size_t val, size_t nbChar){
 string fixedDigitsFloat(double val, size_t nbCharBeforeInclMinus, size_t decimals){
     stringstream toChop; toChop << val;
     if(toChop.str().find(".") == string::npos){
-        toChop << "." << string('0', decimals);
+        toChop << "." << string(decimals, '0');
     } else {
-        toChop << string('0', decimals);
+        toChop << string(decimals, '0');
     }
-    string longerString = string(' ', nbCharBeforeInclMinus) + toChop.str();
+    string longerString = string(nbCharBeforeInclMinus, ' ') + toChop.str();
     size_t posComa = longerString.find(".");
-    string res = longerString.substr(posComa - nbCharBeforeInclMinus, posComa + decimals);
+    //cout << val << "\t" << nbCharBeforeInclMinus << "\t" << decimals << "\t" << posComa << "\t" << longerString << "\t" << posComa - nbCharBeforeInclMinus << "\t" << posComa + decimals << endl;
+    string res = longerString.substr(posComa - nbCharBeforeInclMinus, posComa + decimals-1);
     return res;
 }
 
@@ -712,11 +713,11 @@ void testInOutLatticePDB(){
     // test 2:
     // read a PDB from latfit, then read the same PDB but with another chain, include it in visualization
     latFitToLattice a = latFitToLattice();
-    a.parseLatFitPDB("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ_AdiscretizedFuC5.25.pdb");
+    a.parseLatFitPDB("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_x86_windows_msys_pe_64bit-Release/release/1ADQ_AdiscretizedFuC5.25.pdb");
     a.transform();
     superProtein* P3 = a.asSuperProtein();
 
-    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_Qt_5_12_5_MinGW_64_bit-Release/1ADQ.pdb", "LH", "FuC");
+    vector<vector<double> > positionsAB = getPDBChainCoarseGrainedPositions("C:/Users/pprobert/Desktop/Main/B-CurrentZapotect/Zapotec/build-Absolut-Desktop_x86_windows_msys_pe_64bit-Release/1ADQ.pdb", "LH", "FuC");
     vector<vector<double> >* transformed = new vector<vector<double> >(pooledPDBtoLattice(positionsAB, a.initXAxis, a.initYAxis, a.listPositions[0]));
 
 
@@ -736,18 +737,18 @@ string generatePDBfromLattice(vector3D xAxis, vector3D yAxis, vector3D originPos
     if(p3 != nullptr) nChains = 3;
 
     stringstream PDBout;
-    PDBout << "HEADER    LATTICE PROTEIN STRUCTURE               01-JAN-D0   9ABC              "
-              "TITLE     FIT OF THE PDB STRUCTURE 1ADQ ONTO A LATTICE                          "
-              "COMPND    MOL_ID: 1;                                                            "
-              "COMPND   2 MOLECULE: LATTICE PROTEIN;                                           ";
-    if(nChains == 1) PDBout << "COMPND   3 CHAIN: A;                                                            ";
-    if(nChains == 2) PDBout << "COMPND   3 CHAIN: A, B;                                                         ";
-    if(nChains == 3) PDBout << "COMPND   3 CHAIN: A, B, C;                                                      ";
-    PDBout << "COMPND   4 ENGINEERED: YES                                                      "
-              "SOURCE    MOL_ID: 1                                                             "
-              "KEYWDS    LATTICE EXPORT                                                        "
-              "EXPDTA    YMIR THEORETICAL MODEL                                                "
-              "AUTHOR    ABSOLUT SOFTWARE                                                      ";
+    PDBout << "HEADER    LATTICE PROTEIN STRUCTURE               01-JAN-D0   9ABC              \n"
+              "TITLE     FIT OF THE PDB STRUCTURE 1ADQ ONTO A LATTICE                          \n"
+              "COMPND    MOL_ID: 1;                                                            \n"
+              "COMPND   2 MOLECULE: LATTICE PROTEIN;                                           \n";
+    if(nChains == 1) PDBout << "COMPND   3 CHAIN: A;                                                            \n";
+    if(nChains == 2) PDBout << "COMPND   3 CHAIN: A, B;                                                         \n";
+    if(nChains == 3) PDBout << "COMPND   3 CHAIN: A, B, C;                                                      \n";
+    PDBout << "COMPND   4 ENGINEERED: YES                                                      \n"
+              "SOURCE    MOL_ID: 1                                                             \n"
+              "KEYWDS    LATTICE EXPORT                                                        \n"
+              "EXPDTA    YMIR THEORETICAL MODEL                                                \n"
+              "AUTHOR    ABSOLUT SOFTWARE                                                      \n";
 
 
 
@@ -787,6 +788,8 @@ string generatePDBfromLattice(vector3D xAxis, vector3D yAxis, vector3D originPos
         }
     }
 
+    stringstream connectSection;
+
     // here, we need to transform back
     for(int nC = 0; nC < nChains; ++nC){
 
@@ -811,19 +814,24 @@ string generatePDBfromLattice(vector3D xAxis, vector3D yAxis, vector3D originPos
         }
 
 
-        if(p1->size() != AAsChain.size()) cerr << "ERR: inconsistent AAseq size and AAs size inside the superProtein" << endl;
-        for(size_t i = 0; i < static_cast<size_t>(p1->size()); ++i){
-            int posLattice = p1->points[i].IDposition;
+        if(currentProt->size() != AAsChain.size()) cerr << "ERR: inconsistent AAseq size and AAs size inside the superProtein" << endl;
+        for(size_t i = 0; i < static_cast<size_t>(currentProt->size()); ++i){
+            int posLattice = currentProt->points[i].IDposition;
             vector<int> intPos = lattice::positionFromID(posLattice);
             vector3D doublePos = {static_cast<double>(intPos[0]), static_cast<double>(intPos[1]), static_cast<double>(intPos[2])};
             // Heum, this is probably the other function, latticeToPDB...
             vector3D realPos = toolPDBtoLattice(doublePos, xAxis, yAxis, originPos);
-            PDBout << "HETATM" << fixedDigitsInteger(i+1,5) << "  CA  " << AA_PDBName(AAsChain[i]) << " " << chainID << " " << fixedDigitsInteger(i+1,5) << "    " << fixedDigitsFloat(realPos[0], 4, 3) <<  fixedDigitsFloat(realPos[1], 4, 3) << fixedDigitsFloat(realPos[2], 4, 3) << "  1.00  0.00           C  " << endl;
+            PDBout << "HETATM" << fixedDigitsInteger(2000*nC + i+1,5) << "  CA  " << AA_PDBName(AAsChain[i]) << " " << chainID << "" << fixedDigitsInteger(2000*nC +i+1,4) << "    " << fixedDigitsFloat(realPos[0], 4, 3) <<  fixedDigitsFloat(realPos[1], 4, 3) << fixedDigitsFloat(realPos[2], 4, 3) << "  1.00  0.00           C  " << endl;
+            if(i > 0){
+                connectSection << "CONECT" << fixedDigitsInteger(2000*nC +i,5) << fixedDigitsInteger(2000*nC +i+1,5) << "\n";
+            }
         }
     }
+    PDBout << connectSection.str() << "\n";
     //HETATM    1  CA  PRO L 238       4.069 -25.860   5.700  1.00  0.00           C
     //HETATM    2  CA  SER L 239       7.694 -22.367   7.191  1.00  0.00           C
     //HETATM    3  CA  VAL L 240       4.945 -18.532   4.890  1.00  0.00           C
+    //CONECT  188  686
     return PDBout.str();
 }
 

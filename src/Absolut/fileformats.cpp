@@ -38,13 +38,16 @@ string getFormat(string fileName){
 //      if the first character is a '>' then will recognize as fasta format, the line with '>' is the ID,
 //      expect two columns per line, one for the ID, then sequence, then everything else in that line will be discarded
 //          (so the file can actually have more sequences, they will just be ignored)
-repertoire::repertoire(string fileName){
+repertoire::repertoire(string fileName, bool skipHeader){
     ifstream f;
     f.open(fileName.c_str());
     if(!f){cerr << "ERR::repertoire::repertoire, file not found: " << fileName << endl; return;}
 
     //cout << "   ... Opening repertoire file: " << fileName << endl;
     originalFileName = fileName;
+
+    char bufHeader[10001];
+    if(skipHeader) {f.getline(bufHeader, 10000);}
 
     while(f.good()){
         string ID;
@@ -71,7 +74,7 @@ size_t repertoire::nLines(){
 
 // beginLine and endingLine are both included and start at 0
 // returns <ID, sequence>
-vector< pair<string, string > > repertoire::getLines(int beginLine, int endingLine){
+vector< pair<string, string > > repertoire::getLines(int beginLine, int endingLine, set<string> IDstoIgnore){
     size_t nL = nLines();
     vector< pair<string, string > > res;
     if(beginLine > endingLine) return res;
@@ -81,7 +84,10 @@ vector< pair<string, string > > repertoire::getLines(int beginLine, int endingLi
 
     // THERE WAS A BUG HEEEEERE!!! Last line was omitted (changed bountary up there to -1 for ending line
     for(size_t i = static_cast<size_t>(beginLine); i <= static_cast<size_t>(endingLine); ++i){
-        res.push_back(std::pair<string, string>(listIDs[i], sequences[i]));
+        // only adds this sequence if it is not in the list to ignore
+        if(IDstoIgnore.find(listIDs[i]) == IDstoIgnore.end()){
+            res.push_back(std::pair<string, string>(listIDs[i], sequences[i]));
+        }
     }
     return res;
 }
@@ -120,19 +126,24 @@ vector< pair<string, string > > repertoire::getRandomLines(int nWantedLines){
 
 
 bool compFirst(std::pair<string, size_t> a , std::pair<string, size_t> b){
-    string s1 = string(20 - a.first.length(), ' ') + a.first;
-    string s2 = string(20 - b.first.length(), ' ') + b.first;
+    if(a.first.length() >= maxSizeIDs){
+        cerr << "ERR: the IDs are too big to be sorted. Maybe change the size in fileFormats::compFirst function" << endl;
+    }
+    string s1 = string(maxSizeIDs - a.first.length(), ' ') + a.first;
+    string s2 = string(maxSizeIDs - b.first.length(), ' ') + b.first;
     return (s1 < s2); // this is the lexicographic order from string
 }
 
 
 vector<size_t> repertoire::sortedPositionsPerID(){
 
-    vector< std::pair< string, size_t> > vecSorted;
+    vector< std::pair< string, size_t> > vecSorted = vector< std::pair< string, size_t> >();
 
     std::copy(listPositionsIDs.begin(), listPositionsIDs.end(), std::back_inserter<std::vector<std::pair< string, size_t > > > (vecSorted));
 
+    //cout << vecSorted.size() << endl;
     std::sort(vecSorted.begin(), vecSorted.end(), compFirst);
+    //cout << vecSorted.size() << endl;
 
     size_t N = vecSorted.size();
     vector<size_t> res(N, 0);
