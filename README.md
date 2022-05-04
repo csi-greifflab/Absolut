@@ -139,6 +139,9 @@ sudo apt-get install qtbase5-dev
 sudo apt-get install qtcreator
 sudo apt-get install libqt5svg5
 sudo apt-get install libqt5printsupport5
+
+#To visualize PDB structures during discretization
+sudo apt-get install rasmol
 ```
 ![Video - install full Absolut! in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
 
