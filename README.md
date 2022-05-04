@@ -112,7 +112,7 @@ make MPIgxx
 
 **3/ Absolut** is the full version,
 - requires the **Qt framework**
-- requires **freeglut library** (or another other C++ glut library) fro visualizing 3D lattice structures
+- requires **freeglut library** (or another other C++ glut library) for visualizing 3D lattice structures
 - requires the **gsl** library for discretizing new antigens
 - requires **wget**, for downloading files (like PDBs when discretizing)
 - optionally, a sorftware to visualize PDBs (like Rasmol)
@@ -261,7 +261,7 @@ use:
 wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
 ```
 
-**Step 2:** Calculate the bindigns, after the precomputed structure file is in the same (or parent) folder
+**Step 2:** Calculate the bindings, after the precomputed structure file is in the same (or parent) folder
 
 ```bash
 #For one CDR3 only
