@@ -388,7 +388,7 @@ PDB::PDB(string _PDBfile, string _chains, bool pipeline, double _resolution, str
 {
     ui->setupUi(this);
 
-    commandForRasmol = string("\"C:/MyPrograms/RasWin/RasWin.exe\" ");
+    commandForRasmol = string("\"rasmol\" ");
     // the initialize() from the mother class is already called.
 
     // Sets up the graphical windows and assign buttons to functions
