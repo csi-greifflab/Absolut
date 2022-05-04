@@ -29,7 +29,7 @@ It has been used to benchmark antibody generative ML models in: Akbar and Robert
 ## Download / clone
 
 ```bash
-git clone git://github.com/csi-greifflab/Absolut
+git clone https://github.com/csi-greifflab/Absolut
 ```
 
 ## Usage
