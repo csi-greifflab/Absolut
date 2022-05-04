@@ -348,28 +348,28 @@ void infoOneAntigen(string ID_antigen){
 
 // discretize_delete_insertions. Two cases: no insertion,
 void discretize1(string PDB_ID, string chains){
-    string createdPDB = prepareChainsIntoOneFile(PDB_ID, chains, true);
-    cout << "The PDB with selected chains and removed insertions was stored in (empty if failed):" << createdPDB << endl;
+    //string createdPDB = prepareChainsIntoOneFile(PDB_ID, chains, true);
+    //cout << "The PDB with selected chains and removed insertions was stored in (empty if failed):" << createdPDB << endl;
 }
 
 // calls latfit
 // output file: niceName << PDB_ID << "_" << chains << "discretized" << typeDiscrete << resolution << ".pdb";
 void discretize2(string PDB_ID, string chains, string inputPDBfile = "", double resolution = 5.25, string typeDiscretization = "FuC", string boolAllowJumps = "true", int numberStructuresInParallel=20){
-    discretization a(PDB_ID, chains, resolution, typeDiscretization);
+    /*discretization a(PDB_ID, chains, resolution, typeDiscretization);
     if(inputPDBfile.size() == 0){
         inputPDBfile = a.preparePDB(); // this does the discretize1 step
     }
     bool allow_jumps = (boolAllowJumps.compare("false") && boolAllowJumps.compare("False") && boolAllowJumps.compare("FALSE"));
 
     string createdLatfitPDB = a.discretizeIntoFile(inputPDBfile, allow_jumps, numberStructuresInParallel, true);
-    cout << "The discretized PDB file from latfit was stored in (empty if failed):" << createdLatfitPDB << endl;
+    cout << "The discretized PDB file from latfit was stored in (empty if failed):" << createdLatfitPDB << endl;*/
 }
 
 void discretize3(string PDB_ID, string chains, string PDBdiscretizedFromLatfit){
-    discretization a(PDB_ID, chains, 5.25, "FuC"); // 5.25 and FuC will not be used
+    /*discretization a(PDB_ID, chains, 5.25, "FuC"); // 5.25 and FuC will not be used
     // note, it is going to reread the original PDB_ID.pdb for finding glycans
     string inLatticeCreatedFile = a.transformDiscretizedFileToLattice(PDBdiscretizedFromLatfit);
-    cout << "The lattice version of the discretized PDB was saved in:" << inLatticeCreatedFile << endl;
+    cout << "The lattice version of the discretized PDB was saved in:" << inLatticeCreatedFile << endl;*/
 }
 
 
