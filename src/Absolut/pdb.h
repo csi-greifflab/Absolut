@@ -1,15 +1,15 @@
 #ifndef PDB_H
 #define PDB_H
 
-#include <QtWidgets/QWidget>
 #include <string>
 #include "../Ymir/plot3d.h"
 #include "../Ymir/ymir.h"
 #include "discretize.h"
-#include <QThread>
 #include <cstdlib> // for system
 #include <fstream>
 #ifndef NOQT
+#include <QThread>
+#include <QtWidgets/QWidget>
 #include <QMainWindow>
 #include <QCoreApplication>
 #include <QDir>

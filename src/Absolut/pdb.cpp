@@ -36,8 +36,7 @@ bool downloadPDB(string PDB_ID){
     }
 
     //string command = string("wget --no-check-certificate \"http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=") + PDB_ID + string("\" -O ") + PDB_ID + string(".pdb");
-    string command = string(" wget --no-check-certificate \"http://files.rcsb.org/download/") + PDB_ID + string(".pdb\" -O ") + PDB_ID + string(".pdb");
-
+    string command = string(" curl -O -J \"http://files.rcsb.org/download/") + PDB_ID + string(".pdb\" -O ") + PDB_ID + string(".pdb");
 
     cout << "Executing >> " << command << endl;
     system(command.c_str());
@@ -75,6 +74,11 @@ string getChainList(string chains){
 // note: the name is different if deletions or not, and if merging chains or not)
 string prepareChainsIntoOneFile(string PDB_ID, string chains, bool deleteInsertions){
     if(chains.size() == 0) return string("");
+
+    if(!exists(PDB_ID + ".pdb")){
+        cerr << "File " << PDB_ID << ".pdb not found in the current folder" << endl;
+        return string("");
+    }
 
     // 1 - checks the name of the chains [a-zA-Z] and put them separated with comas, to be run by
     string chainList = getChainList(chains);   // Chains will be reformatted to be: A,B,E ...
@@ -549,9 +553,12 @@ void PDB::seeLatFitOutput(){
 
 void PDB::getFasta(){
     PDB_ID = ui->lineEditPDB_ID->text().toStdString();
-    if(!exists(PDB_ID + string(".fa"))){
+    if(!exists(PDB_ID + string(".fa")) || readFile(PDB_ID + string(".fa")).size() < 1){
         stringstream command;
-        command << "wget -q --no-check-certificate -O " << PDB_ID << ".fa \"https://www.rcsb.org/fasta/entry/" << PDB_ID << "/download\"";
+        // command << "wget -q --no-check-certificate -O " << PDB_ID << ".fa \"https://www.rcsb.org/pdb/download/viewFastaFiles.do?structureIdList=" << PDB_ID << "&compressionType=uncompressed\" | tar xfv -;\n";
+        // suggested by popucui, but still gets some error on my system: command << "wget -q --no-check-certificate -O " << PDB_ID << ".fa \"https://www.rcsb.org/fasta/entry/" << PDB_ID << "/download\"";
+        command << "curl \"https://www.rcsb.org/fasta/entry/" << PDB_ID << "/download\" > " << PDB_ID << ".fa";
+
         cout << "Executing >> " << command.str() << endl;
         system(command.str().c_str());
     }

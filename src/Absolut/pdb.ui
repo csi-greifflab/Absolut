@@ -396,29 +396,6 @@
     <string>Working directory</string>
    </property>
   </widget>
-  <widget class="QLabel" name="label_18">
-   <property name="geometry">
-    <rect>
-     <x>400</x>
-     <y>60</y>
-     <width>191</width>
-     <height>16</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Python command (if not in the PATH)</string>
-   </property>
-  </widget>
-  <widget class="QLineEdit" name="lineEditPythonCommand">
-   <property name="geometry">
-    <rect>
-     <x>420</x>
-     <y>80</y>
-     <width>181</width>
-     <height>20</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QLineEdit" name="lineEditFileOutputLatfit">
    <property name="geometry">
     <rect>
@@ -576,7 +553,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>randmoly picked</string>
+    <string>randomly picked</string>
    </property>
   </widget>
   <widget class="QLabel" name="label_21">

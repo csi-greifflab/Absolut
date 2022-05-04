@@ -179,10 +179,17 @@ string getHelp(int argc, char** argv){
     res << " " << programName << "info_structure  pos1 codeStructure1 pos2 codeStructure2 ... [AAs] \n";
     res << " " << programName << "info_antigens \n";
     res << " " << programName << "info_antigen    AntigenID \n";
-    res << " " << programName << "info_fileNames  AntigenID \n";
+    res << " " << programName << "info_filenames  AntigenID \n";
     res << " " << programName << "info_IDstructure  pos codeStructure \n";
+    res << " \n";
+    res << " Discretization substeps.\n";
+    res << " " << programName << "discretize_delete_insertions        PDB_ID  chain(s)\n";
+    res << " " << programName << "discretize_latfit_to_discrete_pdb   PDB_ID  chain(s)  PDBinputFileWithoutInsertions.pdb [resolution=5.25] [typeDiscretization=FuC] [allowJumps=true] [numberStructuresInParallel=20]\n";
+    res << " " << programName << "discretize_discrete_pdb_to_lattice  PDB_ID  chain(s)  PDBdiscretizedFromLatfit.pdb \n";
     return res.str();
 }
+
+
 
 // Only functions headers here, the functions' content is defined at the bottom of the file.
 
@@ -339,6 +346,31 @@ void infoOneAntigen(string ID_antigen){
 }
 
 
+// discretize_delete_insertions. Two cases: no insertion,
+void discretize1(string PDB_ID, string chains){
+    string createdPDB = prepareChainsIntoOneFile(PDB_ID, chains, true);
+    cout << "The PDB with selected chains and removed insertions was stored in (empty if failed):" << createdPDB << endl;
+}
+
+// calls latfit
+// output file: niceName << PDB_ID << "_" << chains << "discretized" << typeDiscrete << resolution << ".pdb";
+void discretize2(string PDB_ID, string chains, string inputPDBfile = "", double resolution = 5.25, string typeDiscretization = "FuC", string boolAllowJumps = "true", int numberStructuresInParallel=20){
+    discretization a(PDB_ID, chains, resolution, typeDiscretization);
+    if(inputPDBfile.size() == 0){
+        inputPDBfile = a.preparePDB(); // this does the discretize1 step
+    }
+    bool allow_jumps = (boolAllowJumps.compare("false") && boolAllowJumps.compare("False") && boolAllowJumps.compare("FALSE"));
+
+    string createdLatfitPDB = a.discretizeIntoFile(inputPDBfile, allow_jumps, numberStructuresInParallel, true);
+    cout << "The discretized PDB file from latfit was stored in (empty if failed):" << createdLatfitPDB << endl;
+}
+
+void discretize3(string PDB_ID, string chains, string PDBdiscretizedFromLatfit){
+    discretization a(PDB_ID, chains, 5.25, "FuC"); // 5.25 and FuC will not be used
+    // note, it is going to reread the original PDB_ID.pdb for finding glycans
+    string inLatticeCreatedFile = a.transformDiscretizedFileToLattice(PDBdiscretizedFromLatfit);
+    cout << "The lattice version of the discretized PDB was saved in:" << inLatticeCreatedFile << endl;
+}
 
 
 
@@ -432,7 +464,7 @@ int main(int argc, char** argv){
         case 6: option2(argv[2], argv[3], atoi(argv[4]), argv[5]); break; // default 1 thread
         case 7: option2(argv[2], argv[3], 1, "", atoi(argv[4]), atoi(argv[5])); break; // default 1 thread
         case 8: option2(argv[2], argv[3], atoi(argv[4]), argv[5], atoi(argv[6]), atoi(argv[7])); break;
-        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
+        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'Absolut repertoire + 2 to 6 arguments." << endl;
         }
     }
 
@@ -449,7 +481,7 @@ int main(int argc, char** argv){
         case 4: processTasks(argv[2], atoi(argv[3])); break;
         case 5: processTasks(argv[2], atoi(argv[3]), argv[4]); break;
         case 7: processTasks(argv[2], atoi(argv[3]), argv[4], atoi(argv[5]), atoi(argv[6])); break;
-        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
+        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut tasks + 1 to 4 arguments." << endl;
         }
     }
 
@@ -459,7 +491,7 @@ int main(int argc, char** argv){
         //" poses 1ADQ_A repertoire.txt 250 6/ \n";
         // void option2(string ID_antigen, string repertoireFile, int nThreads = 1, string prefix = string(""), int startingLine = 0, int endingLine = 1000000000)
         case 6: option11(argv[2], argv[3], atoi(argv[4]), atoi(argv[5])); break;
-        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'repertoire + 4 arguments. got in total " << argc-1 << endl;
+        default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut poses + 4 arguments." << endl;
         }
     }
 
@@ -473,7 +505,7 @@ int main(int argc, char** argv){
             case 4: option1(argv[2], argv[3]); break;
             case 5: option1(argv[2], argv[3], atof(argv[4])); break;
             case 6: option1(argv[2], argv[3], atof(argv[4]), argv[5]); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'discretize + 1,2,3 or 4 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut discretize + 1,2,3 or 4 arguments." << endl;
             }
         }
 
@@ -485,7 +517,7 @@ int main(int argc, char** argv){
         if(!command.compare("singleBinding")){
             success = true;
             if(argc == 4) option4(argv[2], argv[3]);
-            else cerr << "ERR: couldn't get the correct number of arguments. Expected 'listAntigens + 2 arguments. got in total " << argc-1 << endl;
+            else cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut singleBinding listAntigens + 2 arguments." << endl;
         }
 
         if(!command.compare("getFeatures")){
@@ -502,22 +534,24 @@ int main(int argc, char** argv){
                 }
                 option5(argv[2], argv[3], argv[4], atoi(argv[5]), ((!incl.compare("true")) || (!incl.compare("True")) || (!incl.compare("TRUE")))); break;
             }
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'getFeatures + 3, 4, or 5 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut getFeatures + 3, 4, or 5 arguments." << endl;
             }
         }
 
-        if(!command.compare("poolFeatures")){
-            success = true;
-            switch(argc){
-            //case 7: option5b(argv[2], argv[3], argv[4], argv[5], argv[6]); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'poolFeatures + 5 arguments. got in total " << argc-1 << endl;
-            }
-        }
+//        // Deprecated command
+//        if(!command.compare("poolFeatures")){
+//            success = true;
+//            switch(argc){
+//            //case 7: option5b(argv[2], argv[3], argv[4], argv[5], argv[6]); break;
+//            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected 'poolFeatures + 5 arguments. " << endl;
+//            }
+//        }
 
+          // Deprecated command
 //        if(!command.compare("checkBindings")){
 //            success = true;
 //            if(argc == 4) option6(argv[2], argv[3]);
-//            else cerr << "ERR: couldn't get the correct number of arguments. Expected 'checkBindings + 2 arguments. got in total " << argc-1 << endl;
+//            else cerr << "ERR: couldn't get the correct number of arguments. Expected 'checkBindings + 2 arguments. " << endl;
 //        }
 
         if(!command.compare("visualize")){
@@ -526,7 +560,7 @@ int main(int argc, char** argv){
             case 3: option7(argv[2], false); break;
             case 4: option7(argv[2], false, argv[3]); break;
             case 5: option7(argv[2], false, argv[3], atof(argv[4])); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. visualize + 1,2 or 3 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut visualize + 1,2 or 3 arguments. " << endl;
             }
         }
 
@@ -534,7 +568,7 @@ int main(int argc, char** argv){
             success = true;
             switch(argc){
             case 4: option7b(argv[2], argv[3]); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. visualize + 2 argument. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut visualize + 2 argument." << endl;
             }
         }
 
@@ -543,7 +577,7 @@ int main(int argc, char** argv){
             success = true;
             switch(argc){
             case 5: option12(argv[2], argv[3], argv[4]); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. PDB + 2 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut PDB + 2 arguments." << endl;
             }
         }
 
@@ -558,7 +592,7 @@ int main(int argc, char** argv){
             case 5: option7(argv[2], true, argv[3], atof(argv[4])); break;
             case 6: option7(argv[2], true, argv[3], atof(argv[4]), atoi(argv[5])); break;
             case 7: option7(argv[2], true, argv[3], atof(argv[4]), atoi(argv[5]), atoi(argv[6])); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. visualize_hotspots + 1,2 or 3 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut hotspots + 2 to 5 arguments." << endl;
             }
         }
 
@@ -567,7 +601,7 @@ int main(int argc, char** argv){
             switch(argc){
             case 3: info_position(atoi(argv[2])); break;
             case 5: info_position(atoi(argv[2]), atoi(argv[3]), atoi(argv[4])); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. info_positions + 1 or 3 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut info_positions + 1 or 3 arguments." << endl;
             }
         }
 
@@ -578,28 +612,28 @@ int main(int argc, char** argv){
             case 4: option8(argv[3], 4, string(""), argv[2]); break;
             case 5: option8(argv[3], atoi(argv[4]), string(""), argv[2]); break;
             case 6: option8(argv[3], atoi(argv[4]), argv[5], argv[2]); break;
-            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. batch + 1 or 2 arguments. got in total " << argc-1 << endl;
+            default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut batch + 1 or 2 arguments." << endl;
             }
         }
 //        if(!command.compare("info_IDstructure")){
 //            success = true;
 //            switch(argc){
 //                case 3: option8(argv[2], 4, argv[2]); break;
-//                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. info_IDstructure + 1 argument. got in total " << argc-1 << endl;
+//                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut info_IDstructure + 1 argument." << endl;
 //            }
 //        }
         if(!command.compare("info_antigen")){
             success = true;
             switch(argc){
                 case 3: infoOneAntigen(argv[2]); break;
-                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. info_antigen + 1 arguments. got in total " << argc-1 << endl;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut info_antigen + 1 arguments." << endl;
             }
         }
         if(!command.compare("info_antigens")){
             success = true;
             switch(argc){
                 case 2: infosAllAntigens(); break;
-                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. info_antigens + 0 arguments. got in total " << argc-1 << endl;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut info_antigens + 0 arguments." << endl;
             }
         }
         if(!command.compare("html")){
@@ -609,7 +643,7 @@ int main(int argc, char** argv){
                 case 4: option9(argv[2], argv[3]); break;
                 case 5: option9(argv[2], argv[3], argv[4]); break;
                 case 6: option9(argv[2], argv[3], argv[4], argv[5]); break;
-                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. html + 1 to 4 arguments. got in total " << argc-1 << endl;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut html + 1 to 4 arguments." << endl;
             }
         }
 
@@ -620,15 +654,47 @@ int main(int argc, char** argv){
                 case 5: option10a(argv[2], atoi(argv[3]), atoi(argv[4])); break;
                 // option10b string ID_antigen, int startingPos, string structure, int nrSequences
                 case 6: option10b(argv[2], atoi(argv[3]), argv[4], atoi(argv[5])); break;
-                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. html + 1 to 4 arguments. got in total " << argc-1 << endl;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut develop + 3 to 4 arguments." <<  endl;
             }
         }
 
-        if(!command.compare("info_fileNames")){
+        if(!command.compare("info_filenames")){
             success = true;
             switch(argc){
                 case 3: info_fileNames(argv[2]); break;
-                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. html + 1 to 4 arguments. got in total " << argc-1 << endl;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut info_filenames + 1 argument." << endl;
+            }
+        }
+
+        if(!command.compare("discretize_delete_insertions")){
+            success = true;
+            switch(argc){
+                // discretize1(string PDB_ID, string chains)
+                case 4: discretize1(argv[2], argv[3]); break;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut discretize_delete_insertions + 2 arguments." << endl;
+            }
+        }
+
+        if(!command.compare("discretize_latfit_to_discrete_pdb")){
+            success = true;
+            switch(argc){
+                // discretize2(string PDB_ID, string chains, string inputPDBfile = "", double resolution = 5.25, string typeDiscretization = "FuC", string boolAllowJumps = "true", int numberStructuresInParallel=20)
+                case 4: discretize2(argv[2], argv[3]); break;
+                case 5: discretize2(argv[2], argv[3], argv[4]); break;
+                case 6: discretize2(argv[2], argv[3], argv[4], atof(argv[5])); break;
+                case 7: discretize2(argv[2], argv[3], argv[4], atof(argv[5]), argv[6]); break;
+                case 8: discretize2(argv[2], argv[3], argv[4], atof(argv[5]), argv[6], argv[7]); break;
+                case 9: discretize2(argv[2], argv[3], argv[4], atof(argv[5]), argv[6], argv[7], atoi(argv[8])); break;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut discretize_latfit_to_discrete_pdb + 2 to 7 arguments." << endl;
+            }
+        }
+
+        if(!command.compare("discretize_discrete_pdb_to_lattice")){
+            success = true;
+            switch(argc){
+                // discretize3(string PDB_ID, string chains, string PDBdiscretizedFromLatfit)
+                case 5: discretize3(argv[2], argv[3], argv[4]); break;
+                default: success = false; cerr << "ERR: couldn't get the correct number of arguments. Expected Absolut discretize_discrete_pdb_to_lattice + 3 arguments." << endl;
             }
         }
 
@@ -694,7 +760,7 @@ int option1(string PDB_ID, string chains, double resolution, string typeDiscrete
     a2->show();
     appl.exec();
     #else
-    cerr << "You are intending to run the graphical interface of Absolut. Please make sure to use Zapotec.pro and that NOQT / NO_LIBS are not defined." << endl;
+    cerr << "You are intending to run the graphical interface of Absolut. Please make sure to use the Absolut version with libraries, and that NOQT / NO_LIBS are not defined.\n Of note, it is still possible to discretize by command line, the GUI will pop-up but the job is already done when it pops up." << endl;
     #endif
     return 0;
 }
@@ -1838,7 +1904,8 @@ void option8(string fileCDR3s, int nbNodes, string shortTestFile, string archite
         std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
         getStructFile << "Get" << AntigenName << "_Structures.sh";
         ofstream f4(getStructFile.str());
-        f4 << "wget https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/" << fnameStructures(AG.first, 10, 11, AG.second) << "\n";
+        f4 << "curl -O -J https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/Structures/" << fnameStructures(AG.first, 10, 11, AG.second) << ".zip \n";
+        f4 << "unzip " << fnameStructures(AG.first, 10, 11, AG.second) << ".zip\n";
         f4.close();
     }
     listBatchs.close();
@@ -1889,7 +1956,7 @@ void info_fileNames(string ID_antigen){
     cout << "   ... loading antigen " << AntigenName << " from the library" << endl;
     std::pair<superProtein*, vector<int> > AG = getAntigen(AntigenName);
     cout << "Pre-calculated structures are in " << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << endl;
-    cout << "use:\nwget https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second)<< endl;
+    cout << "use:\ncurl -O -J https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/Structures/" << fnameStructures(AG.first, receptorSize, minInteract, AG.second) << ".zip\n and unzip it" << endl;
 }
 
 void option11(string ID_antigen, string repertoireFileName, size_t nPoses, int latticeSize){
