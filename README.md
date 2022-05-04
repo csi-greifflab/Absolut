@@ -90,6 +90,7 @@ All versions require **a C++ compiler**. We recommend starting with AbsolutNoLib
 
 **1/ AbsolutNoLib** requires no additional library, and can perform all tasks except user interface for discretization and 3D visualization. We recommend first compiling/running AbsolutNoLib, which should work smoothly.
 ```bash
+# Make sure to have a g++ compiler and make, for instance sudo apt-get install build-essential 
 cd src
 make		# This creates 'AbsolutNoLib' executable. 
 ```
@@ -114,8 +115,8 @@ make MPIgxx
 - requires the **Qt framework**
 - requires **freeglut library** (or another other C++ glut library) for visualizing 3D lattice structures
 - requires the **gsl** library for discretizing new antigens
-- requires **wget**, for downloading files (like PDBs when discretizing)
-- optionally, a sorftware to visualize PDBs (like Rasmol)
+- requires **wget** and **curl**, for downloading files (like PDBs when discretizing)
+- optionally, a sorftware to visualize PDBs (like rasmol)
 
 Installing and then linking the libraries can be tricky depending on the OS. 
 Full help for installing these libraries (especially in Windows) is provided in the documentation doc/HowToAbsolut
@@ -123,7 +124,13 @@ It is also possible to use Absolut! with a user-defined custom subset of librari
 
 Installing on linux (simplest):
 ```bash
-#to find the available packages in your distribution
+#sudo apt-get install build-essential  #if you don't have g++ and make 
+sudo apt-get install libgsl-dev
+sudo apt-get install curl
+sudo apt-get install libgsl-dev
+sudo apt-get install freeglut3-dev
+
+#to find the available qt packages in your distribution
 apt-cache search qtbase
 apt-cache search libqt5
 
@@ -132,7 +139,6 @@ sudo apt-get install qtbase5-dev
 sudo apt-get install qtcreator
 sudo apt-get install libqt5svg5
 sudo apt-get install libqt5printsupport5
-sudo apt-get install libgsl-dev
 ```
 ![Video - install full Absolut! in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
 
