@@ -368,7 +368,7 @@ To include the bindings from a raw binding with an optional energy threshold
 ./Absolut hotspots 1FBI_X 1FBI_XRawBindings.txt -95.5
 ```
 
-### User-requested additions:
+### User-requested additions <under construction, compiling problems>:
 
 *It is now possible to perform the antigen discretization step by step from command line:*
 
