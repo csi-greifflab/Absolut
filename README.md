@@ -367,3 +367,30 @@ To include the bindings from a raw binding with an optional energy threshold
 ```bash
 ./Absolut hotspots 1FBI_X 1FBI_XRawBindings.txt -95.5
 ```
+
+### User-requested additions:
+
+*It is now possible to perform the antigen discretization step by step from command line:*
+
+Selecting the chain and removing insertions
+```bash
+./Absolut discretize_delete_insertions 1ADQ A 
+output: 1ADQdeIns.pdb
+```
+
+Using latfit to generate a discretized PDB 
+```bash
+./Absolut discretize_latfit_to_discrete_pdb  1ADQ  A  1ADQdeIns.pdb
+output: 1ADQ_AdiscretizedFuC5.25.pdb
+```
+or with non-default parameters:
+```bash
+./Absolut discretize_latfit_to_discrete_pdb  1ADQ  A  1ADQdeIns.pdb 6 CoM false 40
+output: 1ADQ_AdiscretizedCoM6.pdb
+```
+
+Last step, from the latfit output to the inLattice text file
+```bash
+./Absolut discretize_discrete_pdb_to_lattice 1ADQ A 1ADQ_AdiscretizedFuC5.25.pdb 
+output: 1ADQ_Ainlattice.txt
+```
