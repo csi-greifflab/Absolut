@@ -148,6 +148,9 @@ sudo apt-get install libqt5printsupport5
 
 #To visualize PDB structures during discretization
 sudo apt-get install rasmol
+
+#For using pdb-tools (manipulating pdb files during discretization), python is needed
+#sudo apt install python3
 ```
 ![Video - install full Absolut! in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
 
