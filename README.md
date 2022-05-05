@@ -150,7 +150,9 @@ sudo apt-get install libqt5printsupport5
 sudo apt-get install rasmol
 
 #For using pdb-tools (manipulating pdb files during discretization), python is needed
-#sudo apt install python3
+# sudo apt install python3
+# and make sure that python is callable by "python":
+# alias python=python3
 ```
 ![Video - install full Absolut! in Linux](doc/Install_Full_Linux-converted.mp4?raw=true)
 
