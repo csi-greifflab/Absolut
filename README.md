@@ -18,15 +18,18 @@ The database generated with Absolut! is available as repository in [NIRD researc
 
 ![Absolut! overview](doc/images/GraphicalAbstract.png?raw=true)
 
-## Documentation / Reference
+## Documentation / Reference / Reproducing
 
 You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
 
 The method and analyses of antibody-antigen bindings are explained in:
-- Robert and Akbar et al. 2021, 'A billion synthetic 3D-antibody-antigen complexes enable unconstrained machine-learning formalized investigation of antibody specificity prediction', BioRXiV [link](https://www.biorxiv.org/content/10.1101/2021.07.06.451258v2)
+- Robert and Akbar et al. 2021, Unconstrained generation of synthetic antibody-antigen structures to guide machine learning methodology for real-world antibody specificity prediction', BioRXiV [link](https://www.biorxiv.org/content/10.1101/2021.07.06.451258v3)
 - Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', iScience [link](https://www.sciencedirect.com/science/article/pii/S2589004221009470)
 
 It has been used to benchmark antibody generative ML models in: Akbar and Robert et al 2021 mAbs, 'In silico proof of principle of machine learning-based antibody design at unconstrained scale' [link](https://www.tandfonline.com/doi/full/10.1080/19420862.2022.2031482)
+
+The scripts to reproduce Robert et al. 2021 are also provided in this repository in the folder scripts/ [link](https://github.com/csi-greifflab/Absolut/tree/main/scripts)
+
 
 ## Download / clone
 
