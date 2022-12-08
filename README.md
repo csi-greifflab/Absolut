@@ -30,6 +30,8 @@ It has been used to benchmark antibody generative ML models in: Akbar and Robert
 
 The scripts to reproduce Robert et al. 2021 are also provided in this repository in the folder scripts/ [link](https://github.com/csi-greifflab/Absolut/tree/main/scripts)
 
+License: https://github.com/csi-greifflab/Absolut/blob/main/20221122%20Absolutt%20license.pdf
+
 
 ## Download / clone
 
