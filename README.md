@@ -30,6 +30,11 @@ It has been used to benchmark antibody generative ML models in: Akbar and Robert
 
 The scripts to reproduce Robert et al. 2021 are also provided in this repository in the folder scripts/ [link](https://github.com/csi-greifflab/Absolut/tree/main/scripts)
 
+Within the code, the library LatFit has been used for discretizing antigens, linked with the publication:
+Martin Mann, Daniel Maticzka, Rhodri Saunders, and Rolf Backofen.
+Classifying protein-like sequences in arbitrary lattice protein models using LatPack.
+In HFSP Journal, 2 no. 6 pp. 396, 2008.
+
 License: https://github.com/csi-greifflab/Absolut/blob/main/20221122%20Absolutt%20license.pdf
 
 
