@@ -1,0 +1,33 @@
+
+LatPack is a package of tools associated to lattice protein studies.
+
+A detailed documentation can be found at
+
+  ls ./doc/*
+
+  ./doc/manual-LatFit.pdf
+  ./doc/manual-LatVec.pdf
+  ./doc/manual-LatFold.pdf
+
+For compilation and installation of LatFit in the current directory run
+
+  ./configure --prefix=`pwd`
+  make 
+  make install
+ 
+Afterwards you can run the executable binary with
+
+  ls ./bin/*
+
+  ./bin/latFit
+  ./bin/latVec
+  ./bin/latFold
+
+copyright 2008 by Martin Mann  (http://www.bioinf.uni-freiburg.de/~mmann/)
+
+  Bioinformatics Group
+  University Freiburg
+  Germany
+
+  http://www.bioinf.uni-freiburg.de
+

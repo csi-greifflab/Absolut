@@ -1,0 +1,386 @@
+
+version 1.9.1
+
+160808 Martin Mann
+	- biu-2.3.5 : replaced by biu-2.3.7
+	+ biu-2.3.7 : extended biu version
+	* configure : 
+		* biu-2.3.7 enabled
+	* bin/latFold.cc :
+		* uses now biu::RNG_ARS4x32, a counter-based generator from the 
+		  Random123 library (thanks to Victor Zhao)
+		* parameter "run" info extended
+	* bin/latFoldVec.cc :
+		* uses now biu::RNG_ARS4x32, a counter-based generator from the 
+		  Random123 library (thanks to Victor Zhao)
+		* parameter "run" info extended
+		* now sets the RNG.seed for each run
+
+
+160722 Martin Mann
+	* bin/latFold.cc :
+		* RNG seed set for each run, since LCG produced similar RNG runs for 
+			long simulations with many runs (thanks to Victor Zhao)
+			-> LCG should be avoided (thanks to Victor Zhao):
+				http://dx.doi.org/10.1002/jcc.21638
+			-> maybe integrate Random123
+				http://www.deshawresearch.com/resources_random123.html
+
+version 1.9.0
+
+100622 Martin Mann
+	* latNum : space consumption is now close to zero since symmetry exclusion
+	  is now done via the comparison of the move string to its normalized
+	  version instead of storing all normalized structures within a set 
+	  container
+	
+100621 Martin Mann
+	+ latNum : number of lattice protein structures of a given length and their
+	  symmetry free enumeration
+
+100312 Martin Mann
+	* configure :
+	  - latFold default : disabled (since ELL ist not part of the package)
+	  * BIU v2.3.5 is now part of the package
+	* latFold : FCC folding uses now TRIANGULAR PULL MOVES (new default in BIU)
+	  --> up to now latFold utilized "standard" square pull moves (Lesh et al)
+	      for FCC resulting in larger neighborhoods and unneccesary move 
+	      artefacts
+
+version 1.8.1
+
+091120 Martin Mann
+	* latConv : 
+	  * BUGFIX : base scaling for given bond length was wrong for FCC and 210
+	    (thanks to Reda Rawi)
+	  * now "-seq" accepts also non-HP-sequences ...
+
+091117 Martin Mann
+	* latMap :
+	  + lowest distance for only backbone or only sidechain data if sidechain
+	    models are given
+
+091103 Martin Mann
+	* latFit :
+	  * BUGFIX : possible fragment starts (after gap bridging) are now checked
+	    if they are valid nodes in the current lattice used
+
+version 1.8.0
+
+091018 Martin Mann
+	* latFit :
+	  * SAW bridging of chain gaps now restricted to short chain gaps (currently
+	    up to length 6, see constant MAX_SAW_LENGTH_TO_CONSIDER
+	  + for long chain gaps the approximate relative position to fit is 
+	    determined via a superpositioning of the chain fitted so far. All 
+	    lattice points around this position and their lattice neighbors are
+	    considered for the start of the next fragment. A reflection is 
+	    checked as well to ensure the correct superpositioning.
+
+091015 Martin Mann
+	* biu/SuperPos_Kabsch :
+	  + superpositioning returns now the applied transformation information, 
+	    i.e. translation vector, rotation matrix, and scaling factor
+
+091007 Martin Mann
+	* latFold / latFoldVec :
+	  + new parameter "final" allows for the specification of a structure that
+	    triggers the end of a folding simulation run
+	    --> this is checked independently of the minimal energy ("minE") request
+	* latFold :
+	  * final structure printed for each run is now normalized
+
+091005 Martin Mann
+	* latFold :
+	  + output of final structure per run
+	  * hit rate output only if "minE" parameter present
+	* latFoldVec :
+	  * hit rate output only if "minE" parameter present
+
+090929 Martin Mann
+	* latFoldVec :
+	  * now Boltzmann probabilities of neighbors is calculated based on energy
+	    change to reduce maximal value of the partition function (was exceeding
+	    range of <double> otherwise). still the same probabilities are 
+	    maintained since all neighbored structures have the same 'energy anchor'
+	    which is the elongated structure.
+	* latFit :
+	  + output of superpositioned original chain for dRMSD optimization 
+	    reenabled
+
+090925 Martin Mann
+	* latFit :
+	  * dRMSD optimization
+	    + all chain fragments are now placed in same lattice (no independent
+	      placements and orientation)
+	    + distance between successive fragment ends are constrained by an 
+	      according selfavoiding walk in the lattice, i.e. they could be 
+	      connected via a backbone on the lattice
+	    + progress bar output
+	* BUGFIX : dRMSD calculation of two point sets used wrong normalization
+
+090917 Martin Mann
+	* latFoldVec :
+	  + new parameter "-maxStepsIncrease" to trigger a linear increase of the
+	    simulation length based on "maxSteps" times current sequence length
+	  + PivotMoveSet enabled again
+
+090915 Martin Mann
+	* doc : latfold-manual : fix of "-kT" parameter docu thanks to Rada Rawi
+	* latFoldVec : 
+	  * energy calculation fixed 
+
+090826 Martin Mann
+	* energy files now installed to INSTALLDIR/share/latpack/
+	* latFoldVec :
+	  * BUGFIX : now only final structure/energy output for successful runs
+
+090825 Martin Mann
+	* latFoldVec :
+	  * BUGFIX : chain elongation selection was uniform selection since all 
+	    elongations were restricted to 1.0! now replaced with full Boltzmann
+	    weight
+	  + per default final structure and energy printed to STDOUT
+	  * longer output buffering : only a few std::endl that trigger a flush()
+
+090824 Martin Mann
+	* DEPENDENCY UPDATE : ELL 3.1.2 and BIU 2.3.2
+	* latFold : 
+	  * beta --> kT
+	* latFoldVec :
+	  * BUGFIX : memory leak fixed
+	  * initial structure CT based (not streched one)
+	  * beta --> kT
+	  + rerun of a folding simulation if a chain is not elongatable anymore
+	  * time measurement updated such that each co-translational folding
+	    simulation is measured and the overall time does not count for aborted
+	    simulations
+
+090822 Martin Mann
+	* manuals of latFold and latVec : removed some inconsistencies and C&P 
+	  errors
+	+ latFoldVec : simulates co-translational/vectorial folding via a 
+	  combination of a chain growth algorithm (as in latVec) and a global
+	  folding simulation (as in latFold) for the intermediate protein chains
+	+ manual for latFoldVec
+	  
+version 1.7.2
+
+090729 Martin Mann
+	* latFit :
+	  * dRMSD mode : independent subchain superpositioning for output
+
+090728 Martin Mann
+	* latFit :
+	  * dRMSD mode : independent subchain superpositioning for cRMSD calculation
+	  
+version 1.7.1
+
+090727 Martin Mann
+	* latFit : added support for empty side chain id using the '_' char
+
+090701 Martin Mann
+	* latFit : added optimization mode to verbose output 
+
+version 1.7.0
+
+090630 Martin Mann
+	* LatticeDescriptorCKW :
+	  + getBaseScale : calculates the base vector multiplicator to scale all
+	    neighboring vectors to a given length
+	* SuperPos_Kabsch
+	  + source file includes the basic C function of Arno Formella
+	* LatticeProteinUtil :
+	  + toMoveSequence : IPointVec to MoveSequence
+	* latFit :
+	  + output of absolute move string of each subchain in verbose mode
+
+090629 Martin Mann
+	+ LatticeProteinUtil : utilitiy class for conversion between lattice 
+	  protein structure representations and structural distance calculations
+	  + toMoveSequence : string to MoveSequence
+	  + toString : MoveSequence to string
+	  + toIntPoint : MoveSequence to IPointVec
+	  + toDblPoint : MoveSequence to DPointVec
+	  + structural distance measures formerly part of SuperPos_Kabsch class
+	    (cRMSD, dRMSD, GDT_TS, GDT_HA)
+	* SuperPos_Kabsch
+	  - structural distance measures (now part of LatticeProteinUtil interface)
+
+090626 Martin Mann
+	+ SuperPos_Kabsch : utility class that allows for
+	  + superpositioning of point vectors utilizing the algorithm by Kabsch 
+	    (1976) and its implementation by Arno Formella
+	  + cRMSD : coordinate root mean square deviation
+	  + dRMSD : distance root mean square deviation
+	  + GDT_TS : global distance test - total score
+	  + GDT_HA : global distance test - high accuracy score
+	* latFit : 
+	  + full dRMSD support including side chain models
+	  + final cRMSD evaluation when doing dRMSD optimization
+	  + PDB output adapted for dRMSD optimization
+	  * manual updated
+	  * RENAME : CKW --> 210 : lattice parameter value changed
+	* configure.ac : GSL check added
+
+090624 Martin Mann
+	- bin/latSeF : renamed to latVec
+	+ bin/latVec : renamed latSeF
+
+090623 Martin Mann
+	* latFit : dRMSD optimization enabled (for backbone-only models)
+
+090311 Martin Mann
+	* manual update (citation of LatPack publication)
+
+version 1.6.4
+
+090310 Martin Mann
+	* LatSeF manual : structure normalization explained
+	* latFit:
+	  + PDB parsing support for negative amino acid indices (strange case ...)
+	  + PDB parsing support for incomplete leading and tailing amino acid 
+	    coordinates (e.g. N atom only present)
+	  + PDB parsing support for different models (new parameter "pdbModel")
+	  * changed default parameter value for "pdbChain" from " " to "A"
+	  * changed default parameter value for "outMode" from "CML" to "PDB"
+
+version 1.6.3
+
+090307 Martin Mann
+	+ biu/Rotator3D : rotation handler for 3D biu::DblPoint objects around
+	  X, Y, and Z axis
+	* latFit:
+	  * BUGFIX : dRMSD calculation for gapped sequences
+	  * BUGFIX : rotation matrix for Y axis rotation was partially initialized
+	    using the X rotation angle (C&P error) 
+	  + usage of Rotator3D
+
+090305 Martin Mann
+	* latFit : 
+	  * BUGFIX : no rotation and rescaling done for distance calculation
+	             of two double coordinates.
+	  * BUGFIX : output coordinates were not correct when rotated and shifted 
+
+090303 Martin Mann
+	* latFit : 
+	  * BUGFIX : best fit was not copied but reference was set to local
+	             variable : segfault
+	  * BUGFIX : it was not checked if the last extension was successful or not
+	  * sideChainFit : check extension if PDB information is complete, i.e. 
+	    same number of coordinates for side chain and backbone extracted  
+	
+090302 Martin Mann
+	+ biu/LatticeDescriptorCWK : descriptor for Chess Knight Walk lattice
+	  but NO relative move conversion matrices stated!
+
+090226 Martin Mann
+	* Miyazawa-Jernigan (MJ) energy table added to package
+
+090224 Martin Mann
+	+ added package version information output to all binaries
+	* source updated to be compilable with g++ 4.3.*
+
+version 1.6.2
+
+081112 Daniel Maticzka
+	* added <limits.h> header where needed for newest g++ support
+
+version 1.6.1
+
+081112  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* LatFold :
+	  * parameter 'beta' to 'kT' changed (including internal handling)
+	+ manual-latFold
+
+version 1.6.0
+
+080624  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	+ LatConv : Conversion of different structure representations into each 
+	  other. Supported types are:
+	  + absolute move string
+	  + relative move string
+	  + CML (chemical markup language = XML)
+	  + XYZ
+	  + PDB
+	  + move string normalization for symmetry breaking
+
+version 1.5.0 
+
+080624  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* local biu updated to 2.0.0
+
+080623  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	BIU >= 2.0.0
+	ELL >= 2.3.0
+	* LatFold:
+	  + support for distance interval based energy functions
+	  - parity lattice support disabled
+
+version 1.4.0
+
+080620  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	BIU >= 1.7.0
+	ELL >= 2.2.0
+	* LatSeF:
+	  + support for distance interval based energy functions
+
+version 1.3.0
+
+080618  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* BUGFIX : LatFit : temporary test program exit removed
+
+080617  Daniel Maticzka
+	* LatFold: Pivot Moves support added
+
+080616  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* local BIU library only compiled if '--with-BIU' is not specified
+
+version 1.2.1
+
+086011  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* LatFit:
+	  + chain gap support for side chain models
+
+version 1.2.0
+
+080610  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* LatFit:
+	  + new option "pdbChainGaps" adds the support for non-consecutive position
+	    data in PDB files --> currently for backbone fit only
+
+version 1.1.0
+
+080522  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	+ optional ELL check and usage
+	+ LatFold: folding simulations of lattice backbone models based on HPfold
+	  by Daniel Matizcka 2008
+	  + arbitrary energy function and alphabet via text file
+	  + output guidance
+	  + different verbose output levels
+
+080502 version 1.0.2
+
+080426  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	LatSeF:
+	+ output: number of best CT structures in storage 
+
+080502 version 1.0.1
+
+080426  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	* documentation completed
+	LatSeF:
+	+ maximal storage size can be set to restrict maximal memory consumption 
+
+080424 version 1.0.0
+
+080424  Martin Mann  http://www.bioinf.uni-freiburg.de/~mmann/
+	LatSeF:
+	+ chain growth algorithm for backbone lattice protein models
+	+ arbitrary energy function and alphabet via text file
+	+ lattice models = 2D-square, 3D-cubic, 3D-face-centered-cubic
+	+ extensibility check for last monomer (if one free neighbor is available)
+	+ output of up to k structures with increasing energy
+	+ output of up to k structures with minimal energy only
+	+ minimal memory consumption via compression of move string representation
+	+ progress bar, silent or verbose output

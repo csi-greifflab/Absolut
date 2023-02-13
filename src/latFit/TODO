@@ -1,0 +1,10 @@
+
+latVecFold : explizite angabe von finalen global fold schritten ! 
+
+- pull-moves for triangular lattices
+- combinations of move sets
+
+latConv:
+ - base scaling falsch (FCC)
+ - im output keine aminosäuresequenz !?!?!
+
