@@ -22,8 +22,10 @@ The database generated with Absolut! is available as repository in [NIRD researc
 
 You can find a more detailed documentation in the subfolder doc/HowToAbsolut.pdf
 
+License: https://github.com/csi-greifflab/Absolut/blob/main/20221122%20Absolutt%20license.pdf
+
 The method and analyses of antibody-antigen bindings are explained in:
-- Robert and Akbar et al. 2021, Unconstrained generation of synthetic antibody-antigen structures to guide machine learning methodology for real-world antibody specificity prediction', BioRXiV [link](https://www.biorxiv.org/content/10.1101/2021.07.06.451258v3)
+- Robert and Akbar et al. 2021, [Unconstrained generation of synthetic antibody-antigen structures to guide machine learning methodology for real-world antibody specificity prediction](https://www.nature.com/articles/s43588-022-00372-4)
 - Robert et al 2020, 'Ymir: A 3D structural affinity model for multi-epitope vaccine simulations', iScience [link](https://www.sciencedirect.com/science/article/pii/S2589004221009470)
 
 It has been used to benchmark antibody generative ML models in: Akbar and Robert et al 2021 mAbs, 'In silico proof of principle of machine learning-based antibody design at unconstrained scale' [link](https://www.tandfonline.com/doi/full/10.1080/19420862.2022.2031482)
@@ -31,12 +33,11 @@ It has been used to benchmark antibody generative ML models in: Akbar and Robert
 The scripts to reproduce Robert et al. 2021 are also provided in this repository in the folder scripts/ [link](https://github.com/csi-greifflab/Absolut/tree/main/scripts)
 
 Within the code, the library LatFit has been used for discretizing antigens, linked with the publication:
-Martin Mann, Daniel Maticzka, Rhodri Saunders, and Rolf Backofen.
+- Martin Mann, Daniel Maticzka, Rhodri Saunders, and Rolf Backofen.
 Classifying protein-like sequences in arbitrary lattice protein models using LatPack.
 In HFSP Journal, 2 no. 6 pp. 396, 2008.
 
-License: https://github.com/csi-greifflab/Absolut/blob/main/20221122%20Absolutt%20license.pdf
-
+License: https://github.com/csi-greifflab/Absolut/blob/main/src/latFit/COPYING
 
 ## Download / clone
 
