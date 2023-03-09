@@ -1,4 +1,9 @@
+version 1.9.2
 
+230308 Martin Raden
+ * licence change (from GNU to MIT) for both latpack and biu
+ * cleanup for GitHub upload
+ 
 version 1.9.1
 
 160808 Martin Mann
