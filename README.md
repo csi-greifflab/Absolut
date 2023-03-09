@@ -32,12 +32,13 @@ It has been used to benchmark antibody generative ML models in: Akbar and Robert
 
 The scripts to reproduce Robert et al. 2021 are also provided in this repository in the folder scripts/ [link](https://github.com/csi-greifflab/Absolut/tree/main/scripts)
 
-Within the code, the library LatFit has been used for discretizing antigens, linked with the publication:
-- Martin Mann, Daniel Maticzka, Rhodri Saunders, and Rolf Backofen.
-Classifying protein-like sequences in arbitrary lattice protein models using LatPack.
-In HFSP Journal, 2 no. 6 pp. 396, 2008.
+Within the code, an extended version of the tool LatFit from the [LatPack package](https://github.com/BackofenLab/LatPack/) has been used for discretizing antigens, linked with the publication:
 
-License: https://github.com/csi-greifflab/Absolut/blob/main/src/latFit/COPYING
+- Martin Mann, Daniel Maticzka, Rhodri Saunders, and Rolf Backofen.
+[Classifying protein-like sequences in arbitrary lattice protein models using LatPack](https://doi.org/10.2976/1.3027681).
+In HFSP Journal, 2 no. 6 pp. 396, 2008, DOI:10.2976/1.3027681.
+
+The changed source code is part of this package.
 
 ## Download / clone
 
@@ -401,7 +402,7 @@ To include the bindings from a raw binding with an optional energy threshold
 ./Absolut hotspots 1FBI_X 1FBI_XRawBindings.txt -95.5
 ```
 
-### User-requested additions <only usable with the full Absoltut, but does not start or need the GUI>:
+### User-requested additions <only usable with the full Absolut, but does not start or need the GUI>:
 
 *It is now possible to perform the antigen discretization step by step from command line:*
 
