@@ -138,7 +138,7 @@ for(i in 1:20){
     print(quantile(bigDataThisAntigen$Energy, i * 0.05))
 }
 
-print("Energy for sUper Hero (0.01%)");
+print("Energy for Super Hero (0.01%)");
 thresholdSuperHero = quantile(bigDataThisAntigen$Energy, 0.0001)
 print(thresholdSuperHero)
 SuperHero <- bigDataThisAntigen %>% filter(bigDataThisAntigen$Energy <= thresholdSuperHero) 
@@ -146,7 +146,7 @@ print(paste("Super Heroes CDR3s are ", length(SuperHero$Energy)))
 #write.table(SuperHero, paste(outFolder, antigenID, "_superHeroes.txt", sep=""), row.names = FALSE, sep = "\t", quote = FALSE)
 writeForAbsolut(SuperHero, paste(outFolder, antigenID, "_superHeroes.txt", sep=""), antigenID)
 
-print("Energy for sUper Hero (0.1%)");
+print("Energy for Hero (0.1%)");
 thresholdHero = quantile(bigDataThisAntigen$Energy, 0.001)
 print(thresholdHero)
 Hero <- bigDataThisAntigen %>% filter(bigDataThisAntigen$Energy <= thresholdHero)
