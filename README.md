@@ -73,7 +73,7 @@ An all-in-one example for most tasks is:\
 
 # Get the list of precomputed CDRH3 possible structures for an antigen
 ./AbsolutNoLib info_filenames 1FBI_X
-wget http://philippe-robert.com/Absolut/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt
+curl -O https://ns9999k.webs.sigma2.no/10.11582_2021.00063/projects/NS9603K/pprobert/AbsolutOnline/Structures/SULSU040643e2c0a6d6343bbe8a27b079ef91-10-11-efc862c2cdef086ba79606103a3dfc62Structures.txt.zip
 
 # Get the antibody-antigen complex of a CDRH3 sequence to an antigen (requires the downloaded file above to be in the same folder)
 ./AbsolutNoLib singleBinding 1FBI_X CARAAHKLARIPK
