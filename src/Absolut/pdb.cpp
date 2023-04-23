@@ -36,9 +36,8 @@ bool downloadPDB(string PDB_ID){
     }
 
     //string command = string("wget --no-check-certificate \"http://www.pdb.org/pdb/download/downloadFile.do?fileFormat=pdb&compression=NO&structureId=") + PDB_ID + string("\" -O ") + PDB_ID + string(".pdb");
-    //string command = string(" curl -O -J \"http://files.rcsb.org/download/") + PDB_ID + string(".pdb\" -O ") + PDB_ID + string(".pdb");
-    string command = string(" curl \"http://files.rcsb.org/download/") + PDB_ID + string(".pdb\" > ") + PDB_ID + ".pdb";
-    
+    string command = string(" curl -O -J \"http://files.rcsb.org/download/") + PDB_ID + string(".pdb\" -O ") + PDB_ID + string(".pdb");
+
     cout << "Executing >> " << command << endl;
     system(command.c_str());
     if(exists(PDB_ID + string(".pdb"))){
@@ -389,7 +388,7 @@ PDB::PDB(string _PDBfile, string _chains, bool pipeline, double _resolution, str
 {
     ui->setupUi(this);
 
-    commandForRasmol = string("\"rasmol\" ");
+    commandForRasmol = string("\"C:/MyPrograms/RasWin/RasWin.exe\" ");
     // the initialize() from the mother class is already called.
 
     // Sets up the graphical windows and assign buttons to functions

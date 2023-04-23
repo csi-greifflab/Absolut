@@ -28,6 +28,7 @@ SOURCES += \
     html.cpp \
     importrepertoire.cpp \
     motifFeatures.cpp \
+    oldScripts.cpp \
     poolstructs.cpp \
     runListTasks.cpp \
     selfEvo.cpp \

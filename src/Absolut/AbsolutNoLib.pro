@@ -1,5 +1,6 @@
 include("../Ymir/YmirNoGL.pri")
 DEFINES += "NOQT"
+DEFINES += "NO_LIBS"
 
 HEADERS += \
     antigenLib.h \

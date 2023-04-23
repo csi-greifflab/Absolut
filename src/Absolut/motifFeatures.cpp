@@ -429,6 +429,7 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     vector<int> degreesPositionsLig(SL, 0);
     vector<int> degreesPositionsRec(S2L, 0);
     stringstream interCodeID;
+    stringstream interCodeIDinternal;
 
     stringstream codeInters;
     if((!ligand.structure) || (!s2.structure) || (ligand.points.size() == 0) || (s2.points.size() == 0)) {
@@ -439,10 +440,21 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
         return res;
     }
 
+    vector<double> contribEpi = vector<double>(SL, 0.0);
+    vector<double> contribPara = vector<double>(S2L, 0.0);
+    vector<double> maskcontribEpi = vector<double>(SL, 0.0);
+    vector<double> maskcontribPara = vector<double>(S2L, 0.0);
+
     // 1- transforms the interaction code into two binary vectors (the interaction masks)
     for(size_t i = 0; i < SL; ++i){ // lig
         for(size_t j = 0; j < S2L; ++j){ // rec
             if(lattice::areNeighbors(ligand.points[i].IDposition, s2.points[j].IDposition)){
+                double interEner = AAaffinity(ligand[static_cast<int>(i)].TypeResidue, s2[static_cast<int>(j)].TypeResidue);
+                contribEpi[i] += interEner;
+                contribPara[j] += interEner;
+                maskcontribEpi[i] += 1;
+                maskcontribPara[j] += 1;
+
                 char AAlig = AAname(ligand[static_cast<int>(i)].TypeResidue);
                 char AArec = AAname(s2[static_cast<int>(j)].TypeResidue);
 
@@ -462,9 +474,52 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
 
                 //codeInters << (char) ('a' + (char) j) << AAname(ligand.points[i].TypeResidue);
                 interCodeID << (char) ('a' + (char) j) << fixedInt(ligand.points[i].IDresidue,4);
+
             }
         }
     }
+
+    // there will be at least one interaction.
+    stringstream scontrib1;
+    for(size_t i = 0; i < SL; ++i){ // lig
+        if(maskcontribEpi[i] > 0){
+            scontrib1 << AAname(ligand[static_cast<int>(i)].TypeResidue) << i << ":" << maskcontribEpi[i] << "_" << contribEpi[i] << ",";
+        }
+    }
+    res[contribPerAAepi] = scontrib1.str();
+
+    stringstream scontrib2;
+    for(size_t j = 0; j < S2L; ++j){ // rec
+        if(maskcontribPara[j] > 0){
+            scontrib2 << AAname(s2[static_cast<int>(j)].TypeResidue) << static_cast<char>('a' + j) << ":" << maskcontribPara[j] << "_" << contribPara[j] << ",";
+        }
+    }
+    res[contribPerAAparaBind] = scontrib2.str();
+
+
+    vector<double> contribParaFold = vector<double>(S2L, 0.0);
+    vector<double> maskcontribParaFold = vector<double>(S2L, 0.0);
+    for(size_t j1 = 0; j1 < S2L; ++j1){ // rec
+        for(size_t j2 = j1+2; j2 < S2L; ++j2){ // rec
+            if(lattice::areNeighbors(s2.points[j1].IDposition, s2.points[j2].IDposition)){
+                interCodeIDinternal << (char) ('a' + (char) j1) << (char) ('a' + (char) j2) << "-";
+                double interEner = AAaffinity(s2[static_cast<int>(j1)].TypeResidue, s2[static_cast<int>(j2)].TypeResidue);
+                contribParaFold[j1] += interEner;
+                contribParaFold[j2] += interEner;
+                maskcontribParaFold[j1] += 1;
+                maskcontribParaFold[j2] += 1;
+            }
+        }
+    }
+
+    stringstream scontrib3;
+    for(size_t j1 = 0; j1 < S2L; ++j1){ // rec
+        if(maskcontribParaFold[j1] > 0){
+            scontrib3 << AAname(s2[static_cast<int>(j1)].TypeResidue) << static_cast<char>('a' + j1) << ":" << maskcontribParaFold[j1] << "_" << contribParaFold[j1] << ",";
+        }
+    }
+    res[contribPerAAparaFold] = scontrib3.str();
+
 
     for(size_t i = 0; i < SL; ++i){
         interactingPositionsLig[i] = (degreesPositionsLig[i] >= minDegreeInteract);
@@ -610,6 +665,8 @@ vector<string> structuralFeatures(superProtein& ligand, superProtein & s2, int m
     res[interMaskABParatope] = interMaskRec;
     res[segmentedAGEpitope] = segmentedLig;
     res[segmentedABParatope] = segmentedRec;
+    res[interCodeInternal] = interCodeIDinternal.str();
+
     return res;
 }
 
@@ -638,14 +695,14 @@ features::features(string _antigenID, int _minDegree, int _includeDegreeInMotifs
 }
 
 string features::titleFeatures(){
-     return string("seqAGEpitope\tseqABParatope\tmotifAGEpitope\tmotifABParatope\tagregatesAGEpitope\tagregatesABParatope\tchemicalAGEpitope\tchemicalABParatope\tmotifsSizeGapsLigand\tmotifsSizeGapsRec\tinterMaskAGEpitope\tinterMaskABParatope\tsegmentedAGEpitope\tsegmentedABParatope\tAAcompoFullSlice\tAAcompoFullCDR\tsizeCDR3"); // \thotspot_ID");
+     return string("seqAGEpitope\tseqABParatope\tmotifAGEpitope\tmotifABParatope\tagregatesAGEpitope\tagregatesABParatope\tchemicalAGEpitope\tchemicalABParatope\tmotifsSizeGapsLigand\tmotifsSizeGapsRec\tinterMaskAGEpitope\tinterMaskABParatope\tsegmentedAGEpitope\tsegmentedABParatope\tAAcompoFullSlice\tAAcompoFullCDR\tsizeCDR3\tInterCodeInternal\tcontribPerAAepi\tcontribPerAAparaBind\tcontribPerAAparaFold"); // \thotspot_ID");
 }
 
 string features::printLine(vector<string> res){
     //enum {interCodeWithIDpos, listAAPairs, AAcompoAGEpitope, AAcompo , positionsBound, NB_features}; //nbneighbors, distChem, selfFolding,
     stringstream res2;
 
-    res2 << res[seqAGEpitope] << "\t" << res[seqABParatope] << "\t" << res[motifAGEpitope] << "\t" << res[motifABParatope] << "\t" << res[agregatesAGEpitope] << "\t" << res[agregatesABParatope] << "\t" << res[chemicalAGEpitope] << "\t" << res[chemicalABParatope] << "\t" << res[motifsSizeGapsLigand] << "\t" << res[motifsSizeGapsRec] << "\t" << res[interMaskAGEpitope] << "\t" << res[interMaskABParatope] << "\t" << res[segmentedAGEpitope] << "\t" << res[segmentedABParatope] << "\t" << res[AAcompoFullSlice] << "\t" << res[AAcompoFullCDR] << "\t" << res[sizeCDR3]; // << "\t" << res[hotspot_ID];
+    res2 << res[seqAGEpitope] << "\t" << res[seqABParatope] << "\t" << res[motifAGEpitope] << "\t" << res[motifABParatope] << "\t" << res[agregatesAGEpitope] << "\t" << res[agregatesABParatope] << "\t" << res[chemicalAGEpitope] << "\t" << res[chemicalABParatope] << "\t" << res[motifsSizeGapsLigand] << "\t" << res[motifsSizeGapsRec] << "\t" << res[interMaskAGEpitope] << "\t" << res[interMaskABParatope] << "\t" << res[segmentedAGEpitope] << "\t" << res[segmentedABParatope] << "\t" << res[AAcompoFullSlice] << "\t" << res[AAcompoFullCDR] << "\t" << res[sizeCDR3] << "\t" << res[interCodeInternal] << "\t" << res[contribPerAAepi] << "\t" << res[contribPerAAparaBind] << "\t" << res[contribPerAAparaFold]; // << "\t" << res[hotspot_ID];
     return res2.str();
 }
 
