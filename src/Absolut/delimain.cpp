@@ -1,7 +1,7 @@
 // This is Absolut (main file), C++ code to discretize PDB antigens and generate bindings of short peptides around it.
 
 // Main version.year[a-z].month.day[a-z]
-#define absolut_version "2.2022b.May.04a"
+#define absolut_version "2.2023a.April.23a"
 
 // Three ways to compile it:
 //      Using Absolut.pro, it includes latFit library, Qt user interface, openGL visualisation of antigen-receptor structures
