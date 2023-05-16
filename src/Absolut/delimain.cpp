@@ -1322,7 +1322,10 @@ void processTasks(string fileName, int nThreads, string prefix, int startIDsim, 
         int maxLine = static_cast<int>(rep.nLines())-1;
         int nToProcess = maxLine - minLine + 1;
 
-        stringstream folderSim; folderSim << prefix << "/" << currentTask->IDsim << "/";
+        stringstream folderSim;
+        if(prefix.size() == 0) {folderSim << currentTask->IDsim << "/";}
+        else {folderSim << prefix << "/" << currentTask->IDsim << "/";}
+        
         string folderOutput = folderSim.str();
         #ifdef _WIN32
         mkdir(folderOutput.c_str());
