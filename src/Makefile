@@ -39,7 +39,7 @@ DISTNAME      = AbsolutNoLib1.0.0
 LINK          = g++
 LINKMPICXX    = mpicxx
 
-LFLAGS        = -Wl,-O1
+LFLAGS        = -Wl
 LIBS          = $(SUBLIBS) -lpthread   
 AR            = ar cqs
 RANLIB        = 
