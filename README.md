@@ -284,7 +284,7 @@ The *repertoire* option allows to process a text file with a list of CDR3s.
 **Step 1:** Get requested pre-computed files (once only) 
 
 ```bash
-./Absolut info_fileNames 1FBI_X
+./Absolut info_filenames 1FBI_X
 wget ...
 ```
 
