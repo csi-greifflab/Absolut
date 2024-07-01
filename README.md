@@ -3,7 +3,7 @@ Unconstrained lattice antibody-antigen bindings generator - One tool to simulate
 
 Absolut! allows the user to generate custom datasets by discretizing new antigens or annotating custom CDRH3 sequences enabling the on-demand generation of large synthetic datasets for 3D-antibody-antigen binding generated under the same, deterministic settings, with accessible computing resources.
 
-A [Greifflab](https://greifflab.org/Absolut/) product! Contact for issues / questions: philippe dot robert at ens minus lyon dot org
+A [Greifflab](https://greifflab.org/AbsolutInven2/) product! Contact for issues / questions: philippe dot robert at ens minus lyon dot org
 
 Please inform us with the above e-mail when creating an issue request in this github, we do not get automatic notification.
 
@@ -43,7 +43,7 @@ The changed source code is part of this package.
 ## Download / clone
 
 ```bash
-git clone https://github.com/csi-greifflab/Absolut
+git clone https://github.com/csi-greifflab/AbsolutInven2
 ```
 
 ## Usage
