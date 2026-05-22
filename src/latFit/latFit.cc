@@ -1731,7 +1731,7 @@ fit2lattice_sc(	const biu::DPointVec& p, // iterating cAlpha and side chain atom
 		for (std::vector< std::pair< double, biu::IPointVec > >::const_iterator it = bestFits.begin();
 				it != bestFits.end(); it++)
 		{
-			  // copy and extend current best to extend
+              // copy and extend current best to extend
 			biu::IPointVec next = it->second;
 			  // set lastID to last cAlpha index
 			size_t lastID = next.size()-(next.size()%2==0?2:1);
@@ -2582,6 +2582,8 @@ std::pair<double, double> mainLatFit( int argc, char** argv ) {
 	outAllBest = opts.argExist("outAllBest");
 	silent = opts.argExist("s");
 	verbose = opts.argExist("v");
+    silent = false;
+    verbose = true;
 	
 	pdbModel = opts.getIntVal("pdbModel");
 

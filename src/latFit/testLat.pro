@@ -1,4 +1,5 @@
 HEADERS += \
+	kabsch_nogsl.hh \
     biu/Rotator3D.hh \
     biu/SuperPos_Kabsch.hh \
     biu/LatticeProteinUtil.hh \
@@ -15,6 +16,7 @@ HEADERS += \
 
 
 SOURCES += \
+	kabsch_nogsl.cc \
     latFit.cc \
     biu/Rotator3D.cc \
     biu/SuperPos_Kabsch.cc \
@@ -31,10 +33,3 @@ DISTFILES += \
     biu/LatticeModel.icc \
     biu/Matrix.icc \
     biu/LatticeDescriptor.icc
-
-win32 {
-   INCLUDEPATH += gsl/gsl-2.2.1-shared/include/
-   INCLUDEPATH += gsl/gsl-2.2.1-shared/lib
-   LIBS += -Lgsl/gsl-2.2.1-shared/bin  -llibgsl-19 -llibgslcblas-0
-}
-

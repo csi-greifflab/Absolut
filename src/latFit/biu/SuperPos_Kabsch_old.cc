@@ -31,46 +31,185 @@
  * bugfix from: Adrien Brilhault
  */
 
-// CHANGE(nogsl): removed GSL includes and replaced with kabsch_nogsl.hh.
-// Original lines were:
-//   #include <stdio.h>
-//   #include <gsl/gsl_vector_double.h>
-//   #include <gsl/gsl_matrix_double.h>
-//   #include <gsl/gsl_eigen.h>
-//   #include <gsl/gsl_blas.h>
 #include <stdio.h>
-#include "kabsch_nogsl.hh"
 
-// CHANGE(nogsl): The original C helper kabsch_gsl_vector_cross(), the macro
-// NORM_EPS, and the entire kabsch_superpositioning() body have been removed.
-// They are replaced by the GSL-free wrapper below, which delegates to
-// kabsch_superpositioning_nogsl() from kabsch_nogsl.cc.
-//
-// The new function has an identical external interface from the perspective of
-// the C++ wrapper functions in the biu::SuperPos_Kabsch class below: same
-// inputs (size, X, Y), same outputs (U, t, s), same return value semantics.
-//
-// The only interface change is that X and Y are now plain double* arrays
-// (row-major, size x 3) instead of gsl_matrix*.  The C++ wrappers below have
-// been updated accordingly (see the next CHANGE comment).
+#include <gsl/gsl_vector_double.h>
+#include <gsl/gsl_matrix_double.h>
+#include <gsl/gsl_eigen.h>
+#include <gsl/gsl_blas.h>
 
-// CHANGE(nogsl): thin adapter that bridges the old gsl_matrix* interface used
-// by the C++ wrappers to the new flat-array interface of kabsch_nogsl.
-// This keeps the diff in the C++ wrappers minimal: they still allocate a
-// local flat array, fill it, call this, and read back results.
-// (No GSL types appear anywhere in this file any more.)
+/* gsl does not provide it */
+static inline void kabsch_gsl_vector_cross(
+		const gsl_vector *a,
+		const gsl_vector *b,
+		gsl_vector *c ) 
+{
+	double a0=gsl_vector_get(a,0);
+	double a1=gsl_vector_get(a,1);
+	double a2=gsl_vector_get(a,2);
+	double b0=gsl_vector_get(b,0);
+	double b1=gsl_vector_get(b,1);
+	double b2=gsl_vector_get(b,2);
+	gsl_vector_set(c,0,a1*b2-b1*a2);
+	gsl_vector_set(c,1,a2*b0-b2*a0);
+	gsl_vector_set(c,2,a0*b1-b0*a1);
+}
 
-#define NORM_EPS 0.00000001  // kept so existing #ifdef guards (if any) still compile
+#define NORM_EPS 0.00000001
 
-static int kabsch_superpositioning(
-        unsigned int size,
-        double* X,     // size x 3, row-major
-        double* Y,     // size x 3, row-major
-        double  U[3][3],
-        double  t[3],
-        double* s
+int kabsch_superpositioning(
+		unsigned int size, /* the number of points */
+		gsl_matrix *X,     /* the points to be moved */
+		gsl_matrix *Y,     /* the points to move to */
+		gsl_matrix *U,     /* the rotation matrix */
+		gsl_vector *t,     /* the translation vector */
+		double *s          /* the optimal scaling, if != 0 */
 ) {
-    return kabsch_superpositioning_nogsl(size, X, Y, U, t, s);
+	unsigned int i,j,k;
+	int U_ok=1;
+	double n=1.0/size;
+	gsl_vector *cx=gsl_vector_alloc(3);     /* centroid of X */
+	gsl_vector *cy=gsl_vector_alloc(3);     /* centroid of Y */
+	gsl_matrix *R=gsl_matrix_alloc(3,3);    /* Kabsch's R */
+	gsl_matrix *RTR=gsl_matrix_alloc(3,3);  /* R_trans * R (and Kabsch's bk) */
+	gsl_eigen_symmv_workspace *espace=gsl_eigen_symmv_alloc(3);
+	gsl_matrix *evec=gsl_matrix_alloc(3,3); /* eigenvectors (and Kabsch's ak) */
+	gsl_vector *eval=gsl_vector_alloc(3);   /* vector of eigenvalues */
+
+	/* compute centroid of X */
+	gsl_vector_set_zero(cx);
+	for(i=size;i>0;) {
+		gsl_vector_const_view row=gsl_matrix_const_row(X,--i);
+		gsl_vector_add(cx,&row.vector);
+	} 
+	gsl_vector_scale(cx,n);
+
+	/* compute centroid of Y */
+	gsl_vector_set_zero(cy);
+	for(i=size;i>0;) {
+		gsl_vector_const_view row=gsl_matrix_const_row(Y,--i);
+		gsl_vector_add(cy,&row.vector);
+	} 
+	gsl_vector_scale(cy,n);
+
+	/* move X to origin */
+	for(i=size;i>0;) {
+		gsl_vector_view row=gsl_matrix_row(X,--i);
+		gsl_vector_sub(&row.vector,cx);
+	}
+	/* move Y to origin */
+	for(i=size;i>0;) {
+		gsl_vector_view row=gsl_matrix_row(Y,--i);
+		gsl_vector_sub(&row.vector,cy);
+	}
+
+	if(size==1) {
+		/* just one point, so U is trival */
+		gsl_matrix_set_identity(U);
+	}
+	else {
+		/* compute R */
+		gsl_matrix_set_zero(R);
+		for(k=size;k>0;) {
+			--k;
+			for(i=3;i>0;) {
+				--i;
+				for(j=3;j>0;) {
+					--j;
+					gsl_matrix_set(R,i,j,
+							gsl_matrix_get(R,i,j)+
+							gsl_matrix_get(Y,k,i)*gsl_matrix_get(X,k,j)
+					);
+				}
+			}
+		}
+
+		/* compute RTR = R_trans * R */
+		gsl_matrix_set_zero(RTR);
+		gsl_blas_dgemm(CblasTrans,CblasNoTrans,1.0,R,R,0.0,RTR);
+
+		/* compute orthonormal eigenvectors */
+		gsl_eigen_symmv(RTR,eval,evec,espace);  /* RTR will be modified! */
+		gsl_eigen_symmv_sort(eval,evec,GSL_EIGEN_SORT_VAL_DESC);
+		if(gsl_vector_get(eval,1)>NORM_EPS) {
+			/* compute ak's (as columns of evec) and bk's (as columns of RTR) */
+			double norm_b0,norm_b1,norm_b2;
+			gsl_vector_const_view a0=gsl_matrix_const_column(evec,0);
+			gsl_vector_const_view a1=gsl_matrix_const_column(evec,1);
+			gsl_vector_view a2=gsl_matrix_column(evec,2);
+			gsl_vector_view b0=gsl_matrix_column(RTR,0);
+			gsl_vector_view b1=gsl_matrix_column(RTR,1);
+			gsl_vector_view b2=gsl_matrix_column(RTR,2);
+			kabsch_gsl_vector_cross(&a0.vector,&a1.vector,&a2.vector); /* a2 = a0 x a1 */
+			gsl_blas_dgemv(CblasNoTrans,1.0,R,&a0.vector,0.0,&b0.vector);
+			norm_b0=gsl_blas_dnrm2(&b0.vector);
+			gsl_blas_dgemv(CblasNoTrans,1.0,R,&a1.vector,0.0,&b1.vector);
+			norm_b1=gsl_blas_dnrm2(&b1.vector);
+			if(norm_b0>NORM_EPS&&norm_b1>NORM_EPS) {
+				gsl_vector_scale(&b0.vector,1.0/norm_b0);         /* b0 = ||R * a0|| */
+				gsl_vector_scale(&b1.vector,1.0/norm_b1);         /* b1 = ||R * a1|| */
+				kabsch_gsl_vector_cross(&b0.vector,&b1.vector,&b2.vector);  /* b2 = b0 x b1 */
+
+				norm_b2=gsl_blas_dnrm2(&b2.vector);
+				if(norm_b2>NORM_EPS) {
+					/* we reach this point only if all bk different from 0 */
+					/* compute U = B * A_trans (use RTR as B and evec as A) */
+					gsl_matrix_set_zero(U); /* to avoid nan */
+					gsl_blas_dgemm(CblasNoTrans,CblasTrans,1.0,RTR,evec,0.0,U);
+				}
+				else {
+					U_ok=0;
+					gsl_matrix_set_identity(U);
+				}
+			}
+			else {
+				U_ok=0;
+				gsl_matrix_set_identity(U);
+			}
+		}
+		else {
+			U_ok=0;
+			gsl_matrix_set_identity(U);
+		}
+	}
+
+	if(s) {
+		/* let us compute the optimal scaling as well */
+		/* s = <Y,UX> / <UX,UX> */
+		*s=1.0;
+		if(U_ok&&size>1) {
+			double dom=0.0;
+			double nom=0.0;
+			double dom_i,nom_i;
+			gsl_vector *Uxi=gsl_vector_alloc(3);
+			for(i=size;i>0;) {
+				gsl_vector_const_view row_x=gsl_matrix_const_row(X,--i);
+				gsl_vector_const_view row_y=gsl_matrix_const_row(Y,i);
+				gsl_vector_set_zero(Uxi);
+				gsl_blas_dgemv(CblasNoTrans,1.0,U,&row_x.vector,1.0,Uxi);
+				gsl_blas_ddot(&row_y.vector,Uxi,&nom_i);
+				nom+=nom_i;
+				gsl_blas_ddot(Uxi,Uxi,&dom_i);
+				dom+=dom_i;
+			}
+			*s=nom/dom;
+			gsl_vector_free(Uxi);
+		}
+		gsl_vector_scale(cx,*s);
+	}
+	/* compute t = cy - s * U * cx  */
+	gsl_vector_memcpy(t,cy);
+	gsl_blas_dgemv(CblasNoTrans,-1.0,U,cx,1.0,t);
+
+	gsl_vector_free(eval);
+	gsl_matrix_free(evec);
+	gsl_eigen_symmv_free(espace);
+	gsl_matrix_free(RTR);
+	gsl_matrix_free(R);
+	gsl_vector_free(cy);
+	gsl_vector_free(cx);
+
+	return U_ok;
 }
 
 #include "SuperPos_Kabsch.hh"
@@ -138,52 +277,57 @@ namespace biu {
 			return Transformation();
 		}
 		
-		// CHANGE(nogsl): replaced gsl_matrix_alloc / gsl_matrix_set with plain
-		// std::vector<double> arrays (row-major, size x 3).
-		// Original: gsl_matrix *p1 = gsl_matrix_alloc(pos1.size(), 3); ...
-		const size_t N = pos1.size();
-		std::vector<double> p1(N*3), p2(N*3);
-
-		for (size_t i = 0; i<N; i++) {
-			p1[i*3+0] = pos1.at(i).getX();
-			p1[i*3+1] = pos1.at(i).getY();
-			p1[i*3+2] = pos1.at(i).getZ();
-			p2[i*3+0] = pos2.at(i).getX();
-			p2[i*3+1] = pos2.at(i).getY();
-			p2[i*3+2] = pos2.at(i).getZ();
+		gsl_matrix *p1 = gsl_matrix_alloc(pos1.size(), 3);
+		gsl_matrix *p2 = gsl_matrix_alloc(pos1.size(), 3);
+		
+		for (size_t i = 0; i<pos1.size(); i++) {
+			  // copy pos1
+			gsl_matrix_set( p1, i, 0, pos1.at(i).getX());
+			gsl_matrix_set( p1, i, 1, pos1.at(i).getY());
+			gsl_matrix_set( p1, i, 2, pos1.at(i).getZ());
+			  // copy pos2
+			gsl_matrix_set( p2, i, 0, pos2.at(i).getX());
+			gsl_matrix_set( p2, i, 1, pos2.at(i).getY());
+			gsl_matrix_set( p2, i, 2, pos2.at(i).getZ());
 		}
-
-		// CHANGE(nogsl): replaced gsl_matrix *U / gsl_vector *t with plain C arrays.
-		// Original: gsl_matrix *U = gsl_matrix_alloc(3,3); gsl_vector *t = gsl_vector_alloc(3);
-		double U[3][3] = {};
-		double t_[3]   = {};
-		double sc = 1.0;
-
-		// CHANGE(nogsl): call the nogsl adapter (which calls kabsch_superpositioning_nogsl).
-		// Original: kabsch_superpositioning( pos1.size(), p1, p2, U, t, (scale ? &s : NULL) );
-		kabsch_superpositioning( N, p1.data(), p2.data(), U, t_, (scale ? &sc : nullptr) );
-
+		
+		 // rotation matrix to fill
+		gsl_matrix *U = gsl_matrix_alloc(3, 3);
+		 // translation vector to fill
+		gsl_vector *t = gsl_vector_alloc(3);
+		 // scaling 
+		double s = 1.0;
+		
+		  // run the Kabsch algorithm
+		kabsch_superpositioning( pos1.size(), p1, p2, U, t, (scale ? &s : NULL) );
+		
 		  // prepare the return container for the transformation information
 		Transformation trans;
-		// CHANGE(nogsl): read from plain arrays instead of gsl_vector_get / gsl_matrix_get.
-		trans.translation.setX( t_[0] );
-		trans.translation.setY( t_[1] );
-		trans.translation.setZ( t_[2] );
+		  // set translation information
+		trans.translation.setX( gsl_vector_get( t, 0 ) );
+		trans.translation.setY( gsl_vector_get( t, 1 ) );
+		trans.translation.setZ( gsl_vector_get( t, 2 ) );
+		  // set rotation matrix
 		for (size_t i=0; i<3; i++) {
-			trans.rotation[i][0] = U[i][0];
-			trans.rotation[i][1] = U[i][1];
-			trans.rotation[i][2] = U[i][2];
+			trans.rotation[i][0] = gsl_matrix_get( U, i, 0);
+			trans.rotation[i][1] = gsl_matrix_get( U, i, 1);
+			trans.rotation[i][2] = gsl_matrix_get( U, i, 2);
 		}
 		using namespace biu;
-		trans.scale = sc;
-
+		  // set scaling
+		trans.scale = s;
+		
 		  // copy data back
-		for (size_t i = 0; i<N; i++) {
+		for (size_t i = 0; i<pos1.size(); i++) {
 			  // copy pos1 (U*s*p1)
 			pos1[i] = trans.translation + rotate( trans.rotation, pos1[i])*trans.scale;
 		}
 
-		// CHANGE(nogsl): removed gsl_matrix_free / gsl_vector_free; memory is RAII via std::vector.
+		  // deallocation
+		gsl_matrix_free( p1 );
+		gsl_matrix_free( p2 );
+		gsl_matrix_free( U );
+		gsl_vector_free( t );
 
 		return trans;
 	}
