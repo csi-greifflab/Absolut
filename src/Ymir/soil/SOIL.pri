@@ -24,9 +24,11 @@ SOURCES += \
 
 unix: LIBS += -lGL
 
-win32: {
-    LIBS += -LC:/MyPrograms/freeglut-3.2.1/bin/ -lfreeglut
-    INCLUDEPATH += C:/MyPrograms/freeglut-3.2.1/include/
-    DEPENDPATH += C:/MyPrograms/freeglut-3.2.1/lib/
+win32: {    
+    #LIBS += -LC:/Programs/freeglut/bin/ -lfreeglut
+    LIBS += -LC:/Programs/freeglut/lib/ -lfreeglut
+    INCLUDEPATH += C:/Programs/freeglut/include/
+    DEPENDPATH += C:/Programs/freeglut/lib/
     LIBS +=  -lopengl32
+    #LIBS +=  -lopengl32 -lglu32 -lpthread -lglut32
 }

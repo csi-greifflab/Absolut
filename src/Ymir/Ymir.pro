@@ -30,15 +30,16 @@ HEADERS += \
     ../Tools/zaprandom.h \
     ../Tools/distribution.h
 
-QMAKE_CXXFLAGS += -std=c++11 -Wno-unused-parameter
+QMAKE_CXXFLAGS += -std=c++11
+#-Wno-unused-parameter
 
 unix: LIBS += -lglut -lGLU -lGL -lSOIL
 
 win32: {
-    LIBS += -LC:/MyPrograms/freeglut-3.2.1/bin/ -lfreeglut
-    INCLUDEPATH += C:/MyPrograms/freeglut-3.2.1/include/
-    DEPENDPATH += C:/MyPrograms/freeglut-3.2.1/lib/
-    LIBS +=  -lopengl32 -lglu32
+    LIBS += -LC:/Programs/freeglut/bin/ -lfreeglut
+    #INCLUDEPATH += C:/Programs/freeglut/include/
+    #DEPENDPATH += C:/Programs/freeglut/lib/
+    LIBS +=  -lopengl32 -lglu32 -lpthread -lglut32
 }
 
 win32: TARGET = Ymir.exe

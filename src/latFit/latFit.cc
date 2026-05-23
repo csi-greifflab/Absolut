@@ -3411,7 +3411,7 @@ std::pair<double, double> mainLatFit( int argc, char** argv ) {
 					(optMode != OPT_CRMSD)
 				);
 	
-	if (verbose) {
+    if (false) {
 		std::cout <<"\n absolute move strings per subchain:\n\n";
 		for (size_t i=0; i<latFit.size(); i++) {
 			std::cout <<std::setw(3) <<(i+1) <<" : "

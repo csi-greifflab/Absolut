@@ -61,9 +61,10 @@ QMAKE_CXXFLAGS += -std=c++11 -Wno-extra
 unix: LIBS += -lglut -lGLU -lGL
 
 win32: {
-LIBS += -LC:/MyPrograms/freeglut-3.2.1/bin/ -lfreeglut
-INCLUDEPATH += C:/MyPrograms/freeglut-3.2.1/include/
-DEPENDPATH += C:/MyPrograms/freeglut-3.2.1/lib/
-LIBS +=  -lopengl32 -lglu32
+    LIBS += -LC:/Programs/freeglut/bin/ -lfreeglut
+    LIBS += -LC:/Programs/freeglut/lib/ -lfreeglut
+    INCLUDEPATH += C:/Programs/freeglut/include/
+    DEPENDPATH += C:/Programs/freeglut/lib/
+    LIBS +=  -lopengl32 -lglu32 -lglut32
 }
 
